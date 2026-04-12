@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedAssist AI - Complete Learning Guide</title>
+<style>
+/* ===== CSS RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+  line-height: 1.7;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: #1a365d;
+  color: #e2e8f0;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+  z-index: 100;
+  transition: transform 0.3s ease;
+  scrollbar-width: thin;
+  scrollbar-color: #2d4a7a #1a365d;
+}
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: #1a365d; }
+.sidebar::-webkit-scrollbar-thumb { background: #2d4a7a; border-radius: 3px; }
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid #2d4a7a;
+  text-align: center;
+}
+.sidebar-header h1 {
+  font-size: 1.3rem;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.sidebar-header .subtitle {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.sidebar-nav { padding: 12px 0; }
+.sidebar-nav a {
+  display: block;
+  padding: 10px 20px;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.88rem;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+.sidebar-nav a:hover, .sidebar-nav a.active {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-left-color: #0d9488;
+}
+.sidebar-nav .nav-section {
+  padding: 12px 20px 6px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+/* ===== MOBILE TOGGLE ===== */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 200;
+  background: #1a365d;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  margin-left: 280px;
+  flex: 1;
+  min-width: 0;
+}
+.content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+/* ===== HERO ===== */
+.hero {
+  background: linear-gradient(135deg, #1a365d 0%, #0d9488 100%);
+  color: #fff;
+  padding: 48px 40px;
+  border-radius: 16px;
+  margin-bottom: 40px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  content: '+';
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8rem;
+  opacity: 0.1;
+  font-weight: 700;
+}
+.hero h1 { font-size: 2.2rem; margin-bottom: 8px; }
+.hero p { font-size: 1.05rem; opacity: 0.9; max-width: 600px; }
+.hero .badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  margin-top: 16px;
+}
+
+/* ===== SECTIONS ===== */
+.section {
+  margin-bottom: 32px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+.section-header {
+  padding: 20px 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  border-bottom: 1px solid transparent;
+  transition: background 0.2s;
+}
+.section-header:hover { background: #f1f5f9; }
+.section-header h2 {
+  font-size: 1.25rem;
+  color: #1a365d;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-header .section-num {
+  background: #0d9488;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.section-header .chevron {
+  font-size: 1.2rem;
+  transition: transform 0.3s;
+  color: #94a3b8;
+}
+.section.open .section-header { border-bottom-color: #e2e8f0; }
+.section.open .section-header .chevron { transform: rotate(180deg); }
+.section-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+.section.open .section-body { max-height: none; }
+.section-content { padding: 24px; }
+
+/* ===== TYPOGRAPHY ===== */
+h3 { font-size: 1.1rem; color: #1a365d; margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; }
+h3:first-child { margin-top: 0; }
+h4 { font-size: 1rem; color: #334155; margin: 18px 0 8px; }
+p { margin-bottom: 12px; }
+ul, ol { margin-bottom: 12px; padding-left: 24px; }
+li { margin-bottom: 4px; }
+strong { color: #1a365d; }
+
+/* ===== TABLES ===== */
+.table-wrap { overflow-x: auto; margin: 12px 0 20px; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+th {
+  background: #1a365d;
+  color: #fff;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+tr:hover td { background: #f8fafc; }
+tr:nth-child(even) td { background: #f1f5f9; }
+tr:nth-child(even):hover td { background: #e2e8f0; }
+
+/* ===== CODE BLOCKS ===== */
+code {
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.85em;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #0f766e;
+}
+pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 16px 20px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0 20px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+/* Basic syntax highlighting */
+.kw { color: #c084fc; } /* keyword */
+.str { color: #86efac; } /* string */
+.cm { color: #64748b; } /* comment */
+.fn { color: #7dd3fc; } /* function */
+.num { color: #fbbf24; } /* number */
+.op { color: #f472b6; } /* operator */
+.ty { color: #67e8f9; } /* type */
+
+/* ===== FILE PATHS ===== */
+.fp {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  font-size: 0.85em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline;
+}
+.fp-backend { background: #dcfce7; color: #166534; }
+.fp-frontend { background: #dbeafe; color: #1e40af; }
+.fp-infra { background: #ffedd5; color: #9a3412; }
+.fp-docs { background: #f3e8ff; color: #6b21a8; }
+.fp-root { background: #f1f5f9; color: #334155; }
+.fp-ai { background: #fce7f3; color: #9d174d; }
+.fp-data { background: #e0f2fe; color: #0369a1; }
+
+/* ===== TEAM CARDS ===== */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.team-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px;
+  border-left: 4px solid;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.team-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.team-card.squad-lead { border-left-color: #d97706; }
+.team-card.squad-platform { border-left-color: #dc2626; }
+.team-card.squad-backend { border-left-color: #2563eb; }
+.team-card.squad-frontend { border-left-color: #16a34a; }
+.team-card.squad-ai { border-left-color: #9333ea; }
+.team-card .tc-name { font-weight: 700; color: #1a365d; font-size: 1rem; }
+.team-card .tc-role { font-size: 0.82rem; color: #64748b; margin: 2px 0 8px; }
+.team-card .tc-squad {
+  display: inline-block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.squad-lead .tc-squad { background: #fef3c7; color: #92400e; }
+.squad-platform .tc-squad { background: #fee2e2; color: #991b1b; }
+.squad-backend .tc-squad { background: #dbeafe; color: #1e40af; }
+.squad-frontend .tc-squad { background: #dcfce7; color: #166534; }
+.squad-ai .tc-squad { background: #f3e8ff; color: #6b21a8; }
+.team-card .tc-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px; }
+.team-card .tc-val { font-size: 0.85rem; color: #334155; }
+
+/* ===== AGENT CARDS ===== */
+.agent-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 16px 0;
+  border-left: 4px solid #0d9488;
+}
+.agent-card h4 { margin-top: 0; color: #0d9488; }
+.agent-card .agent-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 8px 0 12px;
+}
+.agent-card .agent-tag {
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #f0fdfa;
+  color: #0d9488;
+  font-weight: 600;
+}
+
+/* ===== ARCHITECTURE DIAGRAM (CSS) ===== */
+.arch-diagram {
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+.arch-layer {
+  border: 2px solid;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+}
+.arch-layer .layer-title {
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  background: #f8fafc;
+  padding: 0 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.arch-layer.client { border-color: #16a34a; }
+.arch-layer.client .layer-title { color: #16a34a; }
+.arch-layer.gateway { border-color: #d97706; }
+.arch-layer.gateway .layer-title { color: #d97706; }
+.arch-layer.backend { border-color: #2563eb; }
+.arch-layer.backend .layer-title { color: #2563eb; }
+.arch-layer.ai { border-color: #9333ea; }
+.arch-layer.ai .layer-title { color: #9333ea; }
+.arch-layer.data { border-color: #dc2626; }
+.arch-layer.data .layer-title { color: #dc2626; }
+.arch-boxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.arch-box {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 100px;
+}
+.arch-layer.client .arch-box { background: #dcfce7; color: #166534; }
+.arch-layer.gateway .arch-box { background: #fef3c7; color: #92400e; }
+.arch-layer.backend .arch-box { background: #dbeafe; color: #1e40af; }
+.arch-layer.ai .arch-box { background: #f3e8ff; color: #6b21a8; }
+.arch-layer.data .arch-box { background: #fee2e2; color: #991b1b; }
+.arch-arrow {
+  text-align: center;
+  font-size: 1.5rem;
+  color: #94a3b8;
+  margin: 4px 0;
+  line-height: 1;
+}
+
+/* ===== INFO BOXES ===== */
+.info-box {
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin: 12px 0;
+  border-left: 4px solid;
+}
+.info-box.tip { background: #f0fdfa; border-color: #0d9488; }
+.info-box.warn { background: #fffbeb; border-color: #d97706; }
+.info-box.danger { background: #fef2f2; border-color: #dc2626; }
+.info-box.info { background: #eff6ff; border-color: #2563eb; }
+.info-box .ib-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+.info-box.tip .ib-title { color: #0d9488; }
+.info-box.warn .ib-title { color: #d97706; }
+.info-box.danger .ib-title { color: #dc2626; }
+.info-box.info .ib-title { color: #2563eb; }
+
+/* ===== STEPS ===== */
+.steps { counter-reset: step; list-style: none; padding-left: 0; }
+.steps li {
+  counter-increment: step;
+  padding: 12px 12px 12px 48px;
+  position: relative;
+  margin-bottom: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 26px;
+  height: 26px;
+  background: #0d9488;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ===== GLOSSARY ===== */
+.glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.glossary-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+}
+.glossary-item dt { font-weight: 700; color: #0d9488; font-size: 0.9rem; margin-bottom: 4px; }
+.glossary-item dd { font-size: 0.85rem; color: #475569; }
+
+/* ===== FILE MAP TREE ===== */
+.file-group { margin: 16px 0; }
+.file-group h4 { color: #1a365d; }
+.file-entry {
+  padding: 10px 14px;
+  margin: 6px 0;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+.file-entry .fe-path { font-family: 'Cascadia Code', Consolas, monospace; font-size: 0.85rem; font-weight: 600; }
+.file-entry .fe-desc { font-size: 0.85rem; color: #475569; margin-top: 4px; }
+.file-entry .fe-owner { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
+
+/* ===== TIMELINE ===== */
+.timeline { position: relative; padding-left: 32px; margin: 16px 0; }
+.timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: #e2e8f0; }
+.tl-item { position: relative; margin-bottom: 20px; }
+.tl-item::before {
+  content: '';
+  position: absolute;
+  left: -27px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  background: #0d9488;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #0d9488;
+}
+.tl-item .tl-phase { font-weight: 700; color: #1a365d; font-size: 0.95rem; }
+.tl-item .tl-desc { font-size: 0.88rem; color: #475569; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-toggle { display: block; }
+  .sidebar-overlay.open { display: block; }
+  .main { margin-left: 0; }
+  .content { padding: 60px 16px 40px; }
+  .hero { padding: 32px 24px; }
+  .hero h1 { font-size: 1.6rem; }
+  .team-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== PRINT ===== */
+@media print {
+  body { display: block; }
+  .sidebar, .sidebar-toggle, .sidebar-overlay { display: none !important; }
+  .main { margin-left: 0; }
+  .section-body { max-height: none !important; overflow: visible !important; }
+  .section { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+  .hero { background: #1a365d !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-print { display: none; }
+  pre { white-space: pre-wrap; word-wrap: break-word; }
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar Toggle (Mobile) -->
+<button class="sidebar-toggle no-print" onclick="toggleSidebar()" aria-label="Toggle navigation">&#9776;</button>
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1>MedAssist AI</h1>
+    <div class="subtitle">Learning Guide</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Getting Started</div>
+    <a href="#welcome">Welcome &amp; Overview</a>
+    <a href="#tech-stack">Tech Stack</a>
+    <a href="#architecture">System Architecture</a>
+    <div class="nav-section">Deep Dives</div>
+    <a href="#ai-agents">The 7 AI Agents</a>
+    <a href="#team">Team &amp; Assignments</a>
+    <a href="#concepts">Production Concepts</a>
+    <div class="nav-section">Workflows</div>
+    <a href="#git-workflow">Git &amp; Contributing</a>
+    <a href="#file-map">Complete File Map</a>
+    <a href="#getting-started">Getting Started Steps</a>
+    <div class="nav-section">Reference</div>
+    <a href="#patterns">Patterns &amp; Best Practices</a>
+    <a href="#glossary">Glossary</a>
+  </nav>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main">
+<div class="content">
+
+<!-- ===== HERO ===== -->
+<div class="hero" id="top">
+  <h1>MedAssist AI Learning Guide</h1>
+  <p>The definitive educational resource for every member of the MedAssist AI team. Everything you need to understand the project, the tech, the architecture, and your role.</p>
+  <span class="badge">Version 1.1 &mdash; March 2026</span>
+</div>
+
+<!-- ==================== SECTION 1: WELCOME ==================== -->
+<div class="section open" id="welcome">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">1</span> Welcome &amp; Project Overview</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <h3>What is MedAssist AI?</h3>
+      <p>MedAssist AI is a <strong>real-time, agentic AI-powered medical assistant platform</strong> designed for hospitals, telemedicine providers, and health startups. It combines symptom analysis, medical report interpretation, continuous patient monitoring, voice-based interaction, and intelligent alerting into a unified system. The platform leverages <strong>7 specialized AI agents</strong> that collaborate autonomously to deliver accurate, context-aware medical insights to both patients and healthcare professionals.</p>
+
+      <h3>Why Are We Building This?</h3>
+      <p>Healthcare systems around the world face critical challenges:</p>
+      <ul>
+        <li><strong>Delayed diagnosis:</strong> Patients wait days or weeks for specialist appointments. Our symptom analysis agent provides immediate, evidence-based preliminary assessments.</li>
+        <li><strong>Information overload:</strong> Doctors spend hours reading lab reports. Our Report Reader agent extracts and highlights critical values in seconds.</li>
+        <li><strong>Missed deterioration:</strong> Hospital patients deteriorate unnoticed. Our monitoring agent watches vitals 24/7 and predicts deterioration 30-60 minutes ahead.</li>
+        <li><strong>Drug interactions:</strong> Medication errors are a leading cause of preventable harm. Our drug interaction agent catches conflicts in real-time.</li>
+        <li><strong>Access barriers:</strong> Rural and underserved communities lack specialist access. Telemedicine and voice-based AI bridge that gap.</li>
+        <li><strong>Care fragmentation:</strong> Treatment plans get lost between visits. AI-generated care plans with adherence tracking keep patients on track.</li>
+      </ul>
+
+      <h3>Who Is This Guide For?</h3>
+      <ul>
+        <li><strong>Team members</strong> &mdash; understand the full system, not just your module</li>
+        <li><strong>New joiners</strong> &mdash; get up to speed without reading 50 files</li>
+        <li><strong>Reviewers &amp; mentors</strong> &mdash; understand the architecture before reviewing PRs</li>
+        <li><strong>Anyone curious</strong> &mdash; learn how production-grade healthcare AI systems work</li>
+      </ul>
+
+      <h3>Project Timeline</h3>
+      <div class="info-box info">
+        <div class="ib-title">Current Status: Phase 1 &mdash; Foundation (In Progress)</div>
+        <p>The project scaffolding is set up with Docker Compose, Flask app factory, Next.js skeleton, CI pipeline, and documentation. Core implementation is beginning now.</p>
+      </div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-phase">Phase 1 &mdash; Foundation (Current)</div>
+          <div class="tl-desc">Project setup, Docker Compose, database schema, Flask app factory, Next.js scaffold, CI pipeline, authentication system. <strong>Status: Scaffolding complete, implementation in progress.</strong></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-phase">Phase 2 &mdash; Core APIs &amp; Frontend</div>
+          <div class="tl-desc">Patient/Doctor CRUD, vitals recording, report upload, medication management, all frontend pages with layouts and navigation</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-phase">Phase 3 &mdash; AI Agents</div>
+          <div class="tl-desc">Base agent framework, orchestrator, all 7 specialist agents, RAG knowledge base, medical prompts</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-phase">Phase 4 &mdash; Real-Time &amp; Integration</div>
+          <div class="tl-desc">WebSocket server, live vitals streaming, monitoring wall, telemedicine video, real-time alerts, notification system</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-phase">Phase 5 &mdash; Polish &amp; Testing</div>
+          <div class="tl-desc">End-to-end testing, performance optimization, security audit, HIPAA compliance verification, UI refinement</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-phase">Phase 6 &mdash; Deployment</div>
+          <div class="tl-desc">Kubernetes setup, Terraform infrastructure, staging deployment, production rollout, monitoring &amp; observability</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 2: TECH STACK ==================== -->
+<div class="section" id="tech-stack">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">2</span> Understanding the Tech Stack</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <p>Every technology in this project was chosen for a reason. This section explains <strong>what each tool does</strong>, <strong>why we chose it</strong>, and what alternatives we considered.</p>
+
+      <h3>Frontend Technologies</h3>
+      <div class="table-wrap">
+      <table>
+        <tr><th>Technology</th><th>What It Does</th><th>Why We Chose It</th><th>Alternatives Considered</th></tr>
+        <tr><td><strong>Next.js 14+</strong></td><td>React meta-framework with App Router for SSR/SSG and file-based routing</td><td>Built-in performance (server components, streaming), SEO support, and the file-based routing eliminates routing boilerplate</td><td>Remix (newer, smaller ecosystem), Vite + React Router (no SSR built-in)</td></tr>
+        <tr><td><strong>React 18+</strong></td><td>UI library with concurrent features (Suspense, transitions)</td><td>Industry standard, massive ecosystem, concurrent rendering for smooth UX even during AI streaming</td><td>Vue 3, Svelte (smaller talent pool for healthcare projects)</td></tr>
+        <tr><td><strong>TypeScript</strong></td><td>Typed superset of JavaScript &mdash; catches bugs at compile time</td><td>Healthcare apps cannot afford runtime type errors. TS catches issues before code runs.</td><td>Plain JavaScript (too risky for medical data handling)</td></tr>
+        <tr><td><strong>Tailwind CSS 3+</strong></td><td>Utility-first CSS framework for rapid prototyping</td><td>Consistent design tokens, no CSS naming conflicts, fast iteration, small production bundle</td><td>styled-components (runtime overhead), vanilla CSS (slow development)</td></tr>
+        <tr><td><strong>shadcn/ui + Radix UI</strong></td><td>Accessible, unstyled component primitives</td><td>Full accessibility out of the box (critical for healthcare), customizable with Tailwind, no vendor lock-in since code is copied into project</td><td>Material UI (opinionated styling), Ant Design (too heavy)</td></tr>
+        <tr><td><strong>Zustand</strong></td><td>Lightweight client-side state management</td><td>Simple API, tiny bundle, no boilerplate (unlike Redux). Perfect for UI state like sidebar open/closed</td><td>Redux Toolkit (overkill), Jotai (less mature)</td></tr>
+        <tr><td><strong>React Query (TanStack)</strong></td><td>Server state management &mdash; caching, auto-refetching, background sync</td><td>Eliminates manual loading/error states, automatic cache invalidation, perfect for medical data that needs to stay fresh</td><td>SWR (less features), Apollo Client (GraphQL only)</td></tr>
+        <tr><td><strong>React Hook Form + Zod</strong></td><td>Performant forms with schema validation</td><td>Minimal re-renders (critical for complex medical forms), Zod provides runtime + compile-time validation with a single schema</td><td>Formik (more re-renders), Yup (no TypeScript inference)</td></tr>
+        <tr><td><strong>Recharts + D3.js</strong></td><td>Medical charts and vitals visualization</td><td>Recharts for standard charts, D3 for custom visualizations (ECG waveforms, body maps)</td><td>Chart.js (less customizable), Victory (smaller ecosystem)</td></tr>
+        <tr><td><strong>Socket.IO Client</strong></td><td>Real-time WebSocket communication</td><td>Automatic reconnection, room support, fallback to long-polling, works with Flask-SocketIO backend</td><td>Native WebSocket (no auto-reconnect), Pusher (paid)</td></tr>
+        <tr><td><strong>Daily.co SDK</strong></td><td>WebRTC video calls for telemedicine</td><td>Handles all WebRTC complexity, HIPAA-compliant, recording support, multi-participant</td><td>Twilio Video (more expensive), raw WebRTC (extremely complex)</td></tr>
+        <tr><td><strong>react-pdf</strong></td><td>Render medical report PDFs in browser</td><td>Patients can view their lab reports without downloading</td><td>pdf.js directly (more work to integrate)</td></tr>
+        <tr><td><strong>NextAuth.js</strong></td><td>Authentication with JWT strategy</td><td>First-class Next.js integration, supports JWT and session strategies, extensible</td><td>Auth0 (vendor lock-in), custom auth (more work)</td></tr>
+        <tr><td><strong>next-intl</strong></td><td>Internationalization for multi-language support</td><td>Supports English, Spanish, French, Hindi, Mandarin as required</td><td>react-i18next (more setup for Next.js)</td></tr>
+        <tr><td><strong>Jest + RTL + Cypress</strong></td><td>Unit, integration, and E2E testing</td><td>Industry standard stack. Jest for unit, RTL for component, Cypress for full user flows</td><td>Vitest (newer), Playwright (less React-specific tooling)</td></tr>
+      </table>
+      </div>
+
+      <h3>Backend Technologies</h3>
+      <div class="table-wrap">
+      <table>
+        <tr><th>Technology</th><th>What It Does</th><th>Why We Chose It</th><th>Alternatives Considered</th></tr>
+        <tr><td><strong>Python 3.11+</strong></td><td>Primary backend language</td><td>Strongest AI/ML ecosystem, excellent libraries for medical data processing, team proficiency</td><td>Node.js (weaker AI ecosystem), Go (no team experience)</td></tr>
+        <tr><td><strong>Flask 3+</strong></td><td>Lightweight, flexible web framework</td><td>Explicit over implicit &mdash; you see exactly what happens. Easy to add exactly the extensions we need.</td><td>Django (too opinionated, ORM doesn't fit our multi-DB needs), FastAPI (less team experience)</td></tr>
+        <tr><td><strong>SQLAlchemy 2.0</strong></td><td>Modern ORM with type hints</td><td>Write Python instead of SQL. 2.0 adds type hints and async support. Works with our complex medical schema.</td><td>Tortoise ORM (less mature), raw SQL (unmaintainable)</td></tr>
+        <tr><td><strong>Alembic</strong></td><td>Database migration management</td><td>Auto-generates migrations from model changes. Critical for safely evolving a production medical database.</td><td>Flask-Migrate (wrapper around Alembic anyway)</td></tr>
+        <tr><td><strong>Flask-JWT-Extended</strong></td><td>JWT authentication</td><td>Access + refresh tokens, blocklist support, custom claims for RBAC</td><td>PyJWT directly (more boilerplate)</td></tr>
+        <tr><td><strong>Flask-SocketIO</strong></td><td>WebSocket support for real-time features</td><td>Integrates with Flask, supports rooms and namespaces, works with Socket.IO client</td><td>websockets library (no Flask integration)</td></tr>
+        <tr><td><strong>Celery + Redis</strong></td><td>Distributed task queue for async jobs</td><td>Report analysis, notification delivery, vitals processing &mdash; all need background processing. Celery is battle-tested.</td><td>Dramatiq (smaller community), RQ (less features)</td></tr>
+        <tr><td><strong>structlog</strong></td><td>Structured JSON logging for production</td><td>Machine-readable logs for ELK Stack. Adds context automatically (request ID, user ID). Critical for HIPAA audit.</td><td>Python logging (no structured output)</td></tr>
+        <tr><td><strong>Flasgger</strong></td><td>Auto-generated Swagger/OpenAPI docs</td><td>Interactive API docs at /apidocs. Frontend team can test endpoints without Postman.</td><td>Flask-RESTX (more opinionated)</td></tr>
+        <tr><td><strong>pytest + Factory Boy</strong></td><td>Testing with test data factories</td><td>Fixtures for clean test setup, factories generate realistic medical test data</td><td>unittest (verbose), Faker alone (no model integration)</td></tr>
+      </table>
+      </div>
+
+      <h3>Why 5 Different Databases?</h3>
+      <div class="info-box info">
+        <div class="ib-title">Different data, different needs</div>
+        <p>A medical platform handles fundamentally different types of data. Using one database for everything would mean compromising on performance, cost, or capabilities for at least some of them.</p>
+      </div>
+      <div class="table-wrap">
+      <table>
+        <tr><th>Database</th><th>What It Stores</th><th>Why This Specific DB</th><th>What Happens Without It</th></tr>
+        <tr><td><strong>PostgreSQL 16</strong></td><td>Users, patients, doctors, appointments, medications, reports, care plans &mdash; all structured relational data</td><td>ACID transactions (critical for medical records), complex queries with JOINs, JSONB for flexible data, battle-tested for healthcare</td><td>If we used a NoSQL DB, we'd lose referential integrity &mdash; a medication could reference a non-existent patient</td></tr>
+        <tr><td><strong>Redis 7</strong></td><td>Session cache, rate limiting counters, Celery message broker, real-time pub/sub, short-term AI memory</td><td>In-memory = microsecond reads. Used as cache (reduce DB load), message broker (Celery), pub/sub (WebSocket events)</td><td>Every request would hit PostgreSQL. Under load with 10K users, response times would spike from 50ms to 500ms+</td></tr>
+        <tr><td><strong>InfluxDB</strong></td><td>Time-series vitals data &mdash; millions of heart rate, BP, SpO2 readings per day</td><td>Purpose-built for time-series. Automatic data retention, downsampling, and time-range queries 100x faster than PostgreSQL for this use case</td><td>PostgreSQL would need billions of rows for vitals. Time-range queries would be painfully slow, and storage costs would explode</td></tr>
+        <tr><td><strong>Pinecone</strong></td><td>Vector embeddings of medical literature, drug information, and patient history</td><td>Semantic search. When a patient says "my chest hurts when I breathe," we need to find relevant medical knowledge by MEANING, not keywords</td><td>Without vector search, our AI agents would have no medical knowledge base. They'd rely entirely on GPT-4o's training data, which may be outdated</td></tr>
+        <tr><td><strong>Elasticsearch</strong></td><td>Full-text search across medical records, doctor profiles, drug names</td><td>Fuzzy matching, relevance scoring, instant autocomplete. A doctor searching "amoxicillin" should find "amoxicillin/clavulanate" too</td><td>PostgreSQL LIKE queries are slow and don't handle typos, abbreviations, or medical synonyms</td></tr>
+      </table>
+      </div>
+
+      <h3>AI / LLM Layer</h3>
+      <div class="table-wrap">
+      <table>
+        <tr><th>Capability</th><th>Model / API</th><th>Why This Model</th></tr>
+        <tr><td><strong>Primary reasoning</strong></td><td>GPT-4o</td><td>Best reasoning for complex medical diagnosis. Understands medical terminology, can weigh multiple factors</td></tr>
+        <tr><td><strong>Fast inference</strong></td><td>GPT-4o-mini</td><td>10x cheaper, 3x faster. Perfect for triage, classification, and monitoring where speed matters more than depth</td></tr>
+        <tr><td><strong>Speech-to-text</strong></td><td>Whisper API</td><td>50+ languages, medical terminology-aware, real-time streaming support</td></tr>
+        <tr><td><strong>Text-to-speech</strong></td><td>TTS API</td><td>Natural voices (alloy/nova), adjustable speed for accessibility</td></tr>
+        <tr><td><strong>Vision</strong></td><td>GPT-4o Vision</td><td>Reads scanned lab reports, X-ray descriptions, handwritten prescriptions</td></tr>
+        <tr><td><strong>Embeddings</strong></td><td>text-embedding-3-large</td><td>Converts medical text to 3072-dim vectors for semantic search in Pinecone</td></tr>
+        <tr><td><strong>Function calling</strong></td><td>OpenAI tool_use</td><td>Lets AI agents safely call tools (search DB, query history) with structured parameters</td></tr>
+        <tr><td><strong>Moderation</strong></td><td>Moderation API</td><td>Filters harmful or inappropriate content before it reaches patients</td></tr>
+      </table>
+      </div>
+
+      <h3>Infrastructure &amp; DevOps</h3>
+      <div class="table-wrap">
+      <table>
+        <tr><th>Technology</th><th>What It Does</th><th>Why We Chose It</th></tr>
+        <tr><td><strong>Docker + Compose</strong></td><td>Containerization for consistent environments</td><td>Every developer runs the exact same stack. "Works on my machine" is eliminated.</td></tr>
+        <tr><td><strong>Kubernetes (EKS)</strong></td><td>Production orchestration, auto-scaling</td><td>Handles traffic spikes (flu season), self-heals crashed containers, zero-downtime deployments</td></tr>
+        <tr><td><strong>GitHub Actions</strong></td><td>CI/CD pipelines</td><td>Runs tests automatically on every PR. Deploys to staging/production automatically.</td></tr>
+        <tr><td><strong>Prometheus + Grafana</strong></td><td>Metrics collection and dashboards</td><td>Know before users complain. Track API latency, error rates, AI response times.</td></tr>
+        <tr><td><strong>ELK Stack</strong></td><td>Centralized logging</td><td>All logs from all services in one searchable place. Critical for debugging distributed systems.</td></tr>
+        <tr><td><strong>Kong / Nginx</strong></td><td>API gateway, rate limiting, SSL termination</td><td>Single entry point, protects backend from direct access, handles TLS certificates</td></tr>
+        <tr><td><strong>Terraform</strong></td><td>Infrastructure as Code</td><td>AWS resources defined in code, version controlled, reproducible. Never click through AWS console.</td></tr>
+      </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 3: ARCHITECTURE ==================== -->
+<div class="section" id="architecture">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">3</span> System Architecture</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <h3>4-Layer Architecture</h3>
+      <p>MedAssist AI follows a strict 4-layer architecture. Each layer only communicates with the layer directly below it. This separation means teams can work independently, and we can swap out any layer without rewriting the rest.</p>
+
+      <div class="arch-diagram">
+        <div class="arch-layer client">
+          <span class="layer-title">Client Layer (Next.js)</span>
+          <div class="arch-boxes">
+            <div class="arch-box">Patient Portal</div>
+            <div class="arch-box">Doctor Dashboard</div>
+            <div class="arch-box">Admin Panel</div>
+            <div class="arch-box">Voice Assistant</div>
+            <div class="arch-box">Monitoring Wall</div>
+          </div>
+        </div>
+        <div class="arch-arrow">&#9660; REST + WebSocket &#9660;</div>
+        <div class="arch-layer gateway">
+          <span class="layer-title">API Gateway (Kong / Nginx)</span>
+          <div class="arch-boxes">
+            <div class="arch-box">SSL Termination</div>
+            <div class="arch-box">Rate Limiting</div>
+            <div class="arch-box">Load Balancing</div>
+            <div class="arch-box">Request Routing</div>
+          </div>
+        </div>
+        <div class="arch-arrow">&#9660;</div>
+        <div class="arch-layer backend">
+          <span class="layer-title">Backend Layer (Flask)</span>
+          <div class="arch-boxes">
+            <div class="arch-box">Auth Service</div>
+            <div class="arch-box">Patient API</div>
+            <div class="arch-box">Vitals API</div>
+            <div class="arch-box">Reports API</div>
+            <div class="arch-box">Appointments API</div>
+            <div class="arch-box">WebSocket Server</div>
+            <div class="arch-box">Celery Workers</div>
+          </div>
+        </div>
+        <div class="arch-arrow">&#9660;</div>
+        <div class="arch-layer ai">
+          <span class="layer-title">Agentic AI Layer</span>
+          <div class="arch-boxes">
+            <div class="arch-box">Orchestrator</div>
+            <div class="arch-box">Symptom Analyst</div>
+            <div class="arch-box">Report Reader</div>
+            <div class="arch-box">Triage</div>
+            <div class="arch-box">Voice</div>
+            <div class="arch-box">Drug Interaction</div>
+            <div class="arch-box">Monitoring</div>
+            <div class="arch-box">Follow-Up</div>
+          </div>
+        </div>
+        <div class="arch-arrow">&#9660;</div>
+        <div class="arch-layer data">
+          <span class="layer-title">Data Layer</span>
+          <div class="arch-boxes">
+            <div class="arch-box">PostgreSQL</div>
+            <div class="arch-box">Redis</div>
+            <div class="arch-box">InfluxDB</div>
+            <div class="arch-box">Pinecone</div>
+            <div class="arch-box">Elasticsearch</div>
+            <div class="arch-box">S3 / MinIO</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>How a Request Flows Through the System</h3>
+      <p>Let's trace what happens when a patient submits a symptom check:</p>
+      <ol class="steps">
+        <li>Patient types "I have chest pain and shortness of breath" in the chat UI (Next.js frontend)</li>
+        <li>Frontend sends POST to <code>/api/v1/symptoms/session/:id/message</code> via the API client (Axios with JWT header)</li>
+        <li>Request hits the API Gateway (Nginx), which validates the rate limit and forwards to Flask</li>
+        <li>Flask's <strong>auth middleware</strong> validates the JWT token and extracts the user identity</li>
+        <li>The <strong>symptoms route</strong> receives the request and calls the <strong>symptom service</strong></li>
+        <li>The service invokes the <strong>Agent Orchestrator</strong>, which classifies the intent as "symptom analysis"</li>
+        <li>Orchestrator dispatches to the <strong>Symptom Analyst Agent</strong> (GPT-4o) and the <strong>Triage Agent</strong> (GPT-4o-mini) in parallel</li>
+        <li>Symptom Agent uses tools: <code>search_medical_knowledge_base</code> (Pinecone RAG), <code>query_patient_history</code> (PostgreSQL)</li>
+        <li>Agent generates differential diagnosis, urgency score, and recommended action</li>
+        <li>Triage Agent assigns ESI Level 2 (high urgency for chest pain)</li>
+        <li>Results saved to <code>symptom_sessions</code> table in PostgreSQL</li>
+        <li>Because ESI is 1-2, a <strong>Celery task</strong> fires to alert the on-call physician via push notification and SMS</li>
+        <li>Response streams back to the frontend via WebSocket (<code>chat:stream</code> event) for a real-time typing effect</li>
+        <li><strong>HIPAA audit middleware</strong> logs the entire interaction to <code>audit_logs</code></li>
+      </ol>
+
+      <h3>The Service Layer Pattern</h3>
+      <div class="info-box tip">
+        <div class="ib-title">Why separate Routes, Services, and Models?</div>
+        <p>This is the most important architectural pattern in the backend. It keeps code organized, testable, and maintainable.</p>
+      </div>
+      <p><strong>Routes</strong> (in <code>api/v1/</code>) handle HTTP concerns: parse request data, validate input, return HTTP responses. They should be thin &mdash; just a few lines.</p>
+      <p><strong>Services</strong> (in <code>services/</code>) contain business logic: "what should happen when a patient books an appointment?" Rules, validations, orchestration, error handling. This is where the real work happens.</p>
+      <p><strong>Models</strong> (in <code>models/</code>) represent database tables as Python classes. They define the schema and provide query methods. No business logic here.</p>
+      <pre><code><span class="cm"># Route (thin): api/v1/appointments.py</span>
+<span class="kw">@</span>bp.route(<span class="str">'/appointments'</span>, methods=[<span class="str">'POST'</span>])
+<span class="kw">@</span>jwt_required()
+<span class="kw">def</span> <span class="fn">create_appointment</span>():
+    data = request.get_json()
+    result = AppointmentService.create(data, current_user)  <span class="cm"># delegate to service</span>
+    <span class="kw">return</span> jsonify(result), <span class="num">201</span>
+
+<span class="cm"># Service (logic): services/appointment_service.py</span>
+<span class="kw">class</span> <span class="ty">AppointmentService</span>:
+    <span class="kw">@staticmethod</span>
+    <span class="kw">def</span> <span class="fn">create</span>(data, user):
+        <span class="cm"># Check doctor availability</span>
+        <span class="cm"># Validate no conflicts</span>
+        <span class="cm"># Create appointment record</span>
+        <span class="cm"># Send confirmation notification</span>
+        <span class="cm"># Return formatted response</span>
+
+<span class="cm"># Model (schema): models/appointment.py</span>
+<span class="kw">class</span> <span class="ty">Appointment</span>(db.Model):
+    id = db.Column(UUID, primary_key=<span class="kw">True</span>)
+    patient_id = db.Column(UUID, db.ForeignKey(<span class="str">'patient_profiles.id'</span>))
+    doctor_id = db.Column(UUID, db.ForeignKey(<span class="str">'doctor_profiles.id'</span>))
+    <span class="cm"># ...</span></code></pre>
+
+      <h3>How AI Agents Work</h3>
+      <p>Our AI layer uses an <strong>orchestrator pattern</strong>. A central orchestrator receives every AI request and routes it to the right specialist agent(s). Think of it like a hospital reception desk that directs patients to the right department.</p>
+      <ol>
+        <li><strong>Orchestrator</strong> receives the request and classifies intent using GPT-4o with function calling</li>
+        <li>It selects one or more <strong>specialist agents</strong> based on the intent (can run in parallel)</li>
+        <li>Each agent has its own <strong>system prompt</strong>, <strong>tools</strong>, and <strong>memory</strong></li>
+        <li>Agents use <strong>function calling</strong> to invoke tools (search knowledge base, query patient history, etc.)</li>
+        <li>Short-term context is stored in <strong>Redis</strong> (conversation buffer) and long-term knowledge in <strong>Pinecone</strong> (vector embeddings)</li>
+        <li>The orchestrator aggregates responses and returns a unified result</li>
+      </ol>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 4: AI AGENTS ==================== -->
+<div class="section" id="ai-agents">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">4</span> The 7 AI Agents</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <p>Each agent is a specialized AI system with its own model, tools, and behavior. They all inherit from <code>BaseAgent</code> and are coordinated by the <strong>Orchestrator</strong>.</p>
+
+      <div class="agent-card">
+        <h4>Agent 1: Symptom Analyst Agent</h4>
+        <div class="agent-meta">
+          <span class="agent-tag">Model: GPT-4o</span>
+          <span class="agent-tag">Owner: Chidi Henry</span>
+          <span class="agent-tag">Priority: High</span>
+        </div>
+        <p><strong>What it does:</strong> Conducts multi-turn symptom interviews, builds differential diagnosis lists, assigns urgency scores, and recommends next steps. It considers patient history, age, sex, and pre-existing conditions.</p>
+        <p><strong>Tools:</strong></p>
+        <ul>
+          <li><code>search_medical_knowledge_base</code> &mdash; RAG over medical literature embeddings in Pinecone</li>
+          <li><code>query_patient_history</code> &mdash; fetch past diagnoses, allergies, medications from PostgreSQL</li>
+          <li><code>calculate_urgency_score</code> &mdash; rule-based + ML urgency scoring</li>
+          <li><code>generate_differential_diagnosis</code> &mdash; structured output of possible conditions with confidence scores</li>
+          <li><code>recommend_specialist</code> &mdash; maps symptoms to specialist type</li>
+        </ul>
+        <p><strong>When triggered:</strong> Patient starts a symptom check via chat, voice, or body map</p>
+        <p><strong>Example:</strong> Patient says "I've had a headache for 3 days, mostly behind my eyes, and it gets worse when I look at screens." The agent asks follow-up questions about vision changes, nausea, and stress levels, then generates a differential including tension headache, migraine, and eye strain, with urgency score 3/10.</p>
+      </div>
+
+      <div class="agent-card">
+        <h4>Agent 2: Medical Report Reader Agent</h4>
+        <div class="agent-meta">
+          <span class="agent-tag">Model: GPT-4o Vision</span>
+          <span class="agent-tag">Owner: Chidi Henry</span>
+          <span class="agent-tag">Priority: High</span>
+        </div>
+        <p><strong>What it does:</strong> Ingests and interprets medical reports (lab results, imaging, pathology). Extracts structured data, flags abnormalities, provides plain-language explanations for patients, and generates trend analysis.</p>
+        <p><strong>Tools:</strong></p>
+        <ul>
+          <li><code>extract_text_from_image</code> &mdash; OCR for scanned reports</li>
+          <li><code>parse_lab_values</code> &mdash; structured extraction with reference ranges</li>
+          <li><code>identify_abnormalities</code> &mdash; flags out-of-range values with severity</li>
+          <li><code>explain_report_in_plain_language</code> &mdash; patient-friendly explanations</li>
+          <li><code>correlate_with_history</code> &mdash; cross-references patient medical history</li>
+          <li><code>generate_report_summary</code> &mdash; structured summary for doctor review</li>
+        </ul>
+        <p><strong>When triggered:</strong> Patient or doctor uploads a medical report (PDF/image)</p>
+        <p><strong>Example:</strong> Patient uploads a CBC lab report. Agent extracts all values, flags low hemoglobin (10.2 g/dL, normal 12-16), explains "Your hemoglobin is below normal range, which may indicate anemia. Your doctor may want to investigate the cause."</p>
+      </div>
+
+      <div class="agent-card">
+        <h4>Agent 3: Triage Agent</h4>
+        <div class="agent-meta">
+          <span class="agent-tag">Model: GPT-4o-mini (fast)</span>
+          <span class="agent-tag">Owner: Chidi Henry</span>
+          <span class="agent-tag">Priority: Critical</span>
+        </div>
+        <p><strong>What it does:</strong> Performs real-time emergency triage. Assigns ESI (Emergency Severity Index) levels 1-5. Must respond in under 2 seconds. Has a conservative bias &mdash; always errs on the side of higher urgency.</p>
+        <p><strong>Tools:</strong></p>
+        <ul>
+          <li><code>evaluate_esi_level</code> &mdash; ESI 1-5 calculation</li>
+          <li><code>check_red_flags</code> &mdash; pattern matching against emergency symptom database</li>
+          <li><code>route_to_emergency</code> &mdash; triggers emergency protocols for ESI 1-2</li>
+          <li><code>assign_priority_queue</code> &mdash; places patient in appointment queue</li>
+          <li><code>notify_on_call_physician</code> &mdash; sends urgent alerts via push/SMS/pager</li>
+        </ul>
+        <p><strong>When triggered:</strong> Automatically runs alongside Symptom Analyst. Also called for quick triage assessments.</p>
+        <p><strong>Example:</strong> Patient reports "crushing chest pain radiating to left arm." Agent immediately assigns ESI Level 1 (life-threatening), triggers emergency protocol, and pages the on-call cardiologist.</p>
+      </div>
+
+      <div class="agent-card">
+        <h4>Agent 4: Voice Interaction Agent</h4>
+        <div class="agent-meta">
+          <span class="agent-tag">Model: Whisper + GPT-4o + TTS</span>
+          <span class="agent-tag">Owner: Manish Mishra</span>
+        </div>
+        <p><strong>What it does:</strong> Handles all voice-based interactions. Converts speech to text (Whisper), processes it through the appropriate agent, then converts the response back to speech (TTS). Supports 50+ languages and ambient clinical note generation.</p>
+        <p><strong>Tools:</strong></p>
+        <ul>
+          <li><code>transcribe_audio</code> &mdash; Whisper API real-time transcription</li>
+          <li><code>detect_language</code> &mdash; multi-language detection</li>
+          <li><code>synthesize_speech</code> &mdash; TTS with configurable voice/speed</li>
+          <li><code>extract_medical_entities</code> &mdash; NER for symptoms, medications, body parts</li>
+          <li><code>manage_voice_session</code> &mdash; session state for multi-turn conversations</li>
+        </ul>
+        <p><strong>When triggered:</strong> User activates voice mode or doctor enables ambient listening during consultation</p>
+      </div>
+
+      <div class="agent-card">
+        <h4>Agent 5: Drug Interaction Agent</h4>
+        <div class="agent-meta">
+          <span class="agent-tag">Model: GPT-4o</span>
+          <span class="agent-tag">Owner: Manish Mishra</span>
+        </div>
+        <p><strong>What it does:</strong> Analyzes medication lists for drug-drug interactions, drug-allergy cross-references, dosage verification, and contraindications. Runs automatically whenever a new medication is prescribed.</p>
+        <p><strong>Tools:</strong></p>
+        <ul>
+          <li><code>check_drug_interactions</code> &mdash; pairwise interaction analysis</li>
+          <li><code>verify_dosage</code> &mdash; age/weight-appropriate dosage validation</li>
+          <li><code>check_allergy_crossreference</code> &mdash; cross-references patient allergy profile</li>
+          <li><code>search_drug_database</code> &mdash; RAG over drug information embeddings</li>
+          <li><code>suggest_alternatives</code> &mdash; recommends alternative medications</li>
+          <li><code>generate_medication_schedule</code> &mdash; creates optimized dosing schedule</li>
+        </ul>
+        <p><strong>When triggered:</strong> New medication prescribed, manual interaction check, medication list changes</p>
+      </div>
+
+      <div class="agent-card">
+        <h4>Agent 6: Patient Monitoring Agent</h4>
+        <div class="agent-meta">
+          <span class="agent-tag">Model: GPT-4o-mini (fast)</span>
+          <span class="agent-tag">Owner: Manish Mishra</span>
+        </div>
+        <p><strong>What it does:</strong> Continuously monitors incoming vital signs from IoT devices, detects anomalies using statistical + ML methods, predicts deterioration 30-60 minutes ahead, and triggers multi-level alert escalation chains.</p>
+        <p><strong>Tools:</strong></p>
+        <ul>
+          <li><code>ingest_vitals_stream</code> &mdash; processes real-time data from InfluxDB</li>
+          <li><code>detect_anomaly</code> &mdash; statistical + ML anomaly detection</li>
+          <li><code>predict_deterioration</code> &mdash; early warning score calculation (NEWS2, MEWS)</li>
+          <li><code>trigger_alert</code> &mdash; multi-channel alerting</li>
+          <li><code>generate_vitals_report</code> &mdash; periodic summary with trends</li>
+          <li><code>correlate_vitals_with_medications</code> &mdash; checks if vitals changes correlate with med schedule</li>
+        </ul>
+        <p><strong>When triggered:</strong> Runs continuously (24/7), checking vitals every 30 seconds per patient</p>
+      </div>
+
+      <div class="agent-card">
+        <h4>Agent 7: Follow-Up &amp; Care Plan Agent</h4>
+        <div class="agent-meta">
+          <span class="agent-tag">Model: GPT-4o</span>
+          <span class="agent-tag">Owner: Manish Mishra</span>
+        </div>
+        <p><strong>What it does:</strong> Generates personalized, evidence-based care plans with measurable goals. Tracks treatment adherence, sends reminders, and dynamically adjusts plans based on patient progress.</p>
+        <p><strong>Tools:</strong></p>
+        <ul>
+          <li><code>generate_care_plan</code> &mdash; personalized plan based on diagnosis and patient profile</li>
+          <li><code>schedule_followup</code> &mdash; integrates with appointment system</li>
+          <li><code>send_reminder</code> &mdash; multi-channel reminders (push, SMS, email)</li>
+          <li><code>track_adherence</code> &mdash; monitors medication and appointment adherence</li>
+          <li><code>adjust_care_plan</code> &mdash; dynamically adjusts based on progress</li>
+          <li><code>generate_patient_education</code> &mdash; creates condition-specific educational content</li>
+        </ul>
+        <p><strong>When triggered:</strong> After diagnosis, when doctor creates care plan, or AI auto-generates one</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 5: TEAM ==================== -->
+<div class="section" id="team">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">5</span> Team Structure &amp; Assignments</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <p>The team is organized into <strong>4 squads</strong>. Each person owns specific modules but collaborates with others at integration points.</p>
+
+      <div class="team-grid">
+
+        <div class="team-card squad-lead">
+          <div class="tc-squad">Lead</div>
+          <div class="tc-name">PK</div>
+          <div class="tc-role">Project Lead / Architect</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Foundation, DB schema, Docker, Integration, PR Reviews</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Everyone &mdash; reviews all PRs, resolves cross-squad conflicts</div>
+        </div>
+
+        <div class="team-card squad-platform">
+          <div class="tc-squad">Platform</div>
+          <div class="tc-name">Pallavi Sindkar</div>
+          <div class="tc-role">Auth &amp; Security Engineer</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Auth, Authorization, HIPAA Audit, Security, Admin panel API</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">PK (architecture), Everyone (auth is a dependency for all APIs)</div>
+        </div>
+
+        <div class="team-card squad-backend">
+          <div class="tc-squad">Backend</div>
+          <div class="tc-name">Sanjay Kumar</div>
+          <div class="tc-role">Patient &amp; Doctor API Developer</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Patient APIs, Doctor APIs, Medical History, Search</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Pallavi (needs auth middleware), Siddhartha (frontend consumes these APIs)</div>
+        </div>
+
+        <div class="team-card squad-frontend">
+          <div class="tc-squad">Frontend</div>
+          <div class="tc-name">Siddhartha Borpuzari</div>
+          <div class="tc-role">Frontend Lead</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">All frontend pages, Layouts, Auth UI, Dashboards, Route groups</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Abhrajit + Prodip (leads their frontend work), All backend devs (API contracts)</div>
+        </div>
+
+        <div class="team-card squad-frontend">
+          <div class="tc-squad">Frontend</div>
+          <div class="tc-name">Abhrajit Pal</div>
+          <div class="tc-role">Reports / Meds / Care Plans UI</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Shared Components, Report UI, Medication UI, Care Plan UI</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Siddhartha (frontend lead), Vikash (reports/meds backend), Arjun (care plans backend)</div>
+        </div>
+
+        <div class="team-card squad-frontend">
+          <div class="tc-squad">Frontend</div>
+          <div class="tc-name">Prodip Sarkar</div>
+          <div class="tc-role">Vitals / Monitoring / Telemedicine UI</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Custom Hooks, Vitals Charts, Monitoring Wall, Telemedicine Video</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Siddhartha (frontend lead), Prabeen (vitals backend), Ashish (WebSocket)</div>
+        </div>
+
+        <div class="team-card squad-ai">
+          <div class="tc-squad">AI</div>
+          <div class="tc-name">Chidi Henry</div>
+          <div class="tc-role">AI Agents Lead (Agents 1-3)</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Base Agent, Orchestrator, Symptom Analyst, Report Reader, Triage Agent</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Manish (co-owns AI layer), Vikash (Report Reader needs report data)</div>
+        </div>
+
+        <div class="team-card squad-ai">
+          <div class="tc-squad">AI</div>
+          <div class="tc-name">Manish Mishra</div>
+          <div class="tc-role">AI Agents (Agents 4-7)</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Drug Interaction, Voice, Monitoring, Follow-Up Agents</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Chidi (AI architecture), Prabeen (monitoring vitals data), Arjun (care plans)</div>
+        </div>
+
+        <div class="team-card squad-backend">
+          <div class="tc-squad">Backend</div>
+          <div class="tc-name">G Prabeen Kumar</div>
+          <div class="tc-role">Vitals &amp; Monitoring Backend</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Vitals APIs, InfluxDB integration, Device Registry, Monitoring Alerts</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Ashish (WebSocket for vitals streaming), Manish (Monitoring Agent), Prodip (frontend charts)</div>
+        </div>
+
+        <div class="team-card squad-backend">
+          <div class="tc-squad">Backend</div>
+          <div class="tc-name">Vikash Kumar</div>
+          <div class="tc-role">Reports &amp; Medications Backend</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Report APIs, S3/MinIO file storage, Medication APIs, Drug search</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Chidi (Report Reader Agent needs report data), Abhrajit (frontend report UI)</div>
+        </div>
+
+        <div class="team-card squad-backend">
+          <div class="tc-squad">Backend</div>
+          <div class="tc-name">Arjun K</div>
+          <div class="tc-role">Appointments / Telemedicine / Care Plans</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">Appointment APIs, Telemedicine APIs, Care Plan APIs, Chat, Notification APIs</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Manish (Follow-Up Agent), Prodip (telemedicine UI), Ashish (notification delivery)</div>
+        </div>
+
+        <div class="team-card squad-platform">
+          <div class="tc-squad">Platform</div>
+          <div class="tc-name">Ashish Kumar Singh</div>
+          <div class="tc-role">Real-Time / WebSockets / DevOps</div>
+          <div class="tc-label">Modules</div>
+          <div class="tc-val">WebSocket Server, Celery workers, CI/CD pipelines, Docker, Elasticsearch</div>
+          <div class="tc-label">Works With</div>
+          <div class="tc-val">Prabeen (vitals streaming), PK (infrastructure), Everyone (CI/CD affects all)</div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 6: CONCEPTS ==================== -->
+<div class="section" id="concepts">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">6</span> How Production-Grade Projects Work</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <h3>What is a Monorepo vs Polyrepo?</h3>
+      <p>A <strong>monorepo</strong> stores all project code in a single Git repository. Our project is a monorepo &mdash; frontend, backend, infrastructure, and docs all live together. This makes it easier to coordinate changes across the stack (e.g., if an API changes, the frontend that calls it is in the same repo).</p>
+      <p>A <strong>polyrepo</strong> splits each service into its own repository. Better for very large organizations with independent teams, but adds coordination overhead.</p>
+
+      <h3>What is Docker and Why We Use Containers?</h3>
+      <p>Docker packages an application and all its dependencies into a <strong>container</strong> &mdash; a lightweight, portable unit that runs the same everywhere. When you run <code>docker-compose up</code>, it starts 8 services (Postgres, Redis, InfluxDB, Elasticsearch, MinIO, Flask, Celery, Next.js) with the exact same versions and configurations that everyone else uses.</p>
+      <p>Without Docker, every developer would spend hours installing PostgreSQL 16, Redis 7, InfluxDB, and Elasticsearch with the right versions and configurations. "Works on my machine" would be a daily problem.</p>
+
+      <h3>What is CI/CD?</h3>
+      <p><strong>CI (Continuous Integration)</strong> means every time you push code, automated tests run. If they fail, you know before merging. Our <code>.github/workflows/ci.yml</code> runs lint + tests on every Pull Request.</p>
+      <p><strong>CD (Continuous Deployment)</strong> means once code is merged, it automatically deploys. Merge to <code>develop</code> &rarr; deploys to staging. Merge to <code>main</code> &rarr; deploys to production.</p>
+
+      <h3>What is a Database Migration?</h3>
+      <p>A migration is a version-controlled change to the database schema. Instead of manually running SQL on the production database (dangerous!), we write migration scripts that Alembic manages. Each migration has an upgrade (apply) and downgrade (revert) function. This means:</p>
+      <ul>
+        <li>Every schema change is tracked in Git</li>
+        <li>We can reproduce the exact database state on any environment</li>
+        <li>We can roll back if something goes wrong</li>
+        <li>Multiple developers can make schema changes without conflicts</li>
+      </ul>
+
+      <h3>What is JWT Authentication?</h3>
+      <p><strong>JWT (JSON Web Token)</strong> is a compact, URL-safe token that contains user identity and permissions. When you log in, the server creates a JWT signed with a secret key. On every subsequent request, you send this token in the <code>Authorization</code> header. The server verifies the signature without querying the database.</p>
+      <p>We use <strong>two tokens</strong>: an <strong>access token</strong> (expires in 15 minutes, used for every API call) and a <strong>refresh token</strong> (expires in 7 days, used to get a new access token). This limits damage if a token is stolen.</p>
+
+      <h3>What is HIPAA?</h3>
+      <p><strong>HIPAA (Health Insurance Portability and Accountability Act)</strong> is a US federal law that protects patient health information (PHI). Any application that handles medical data must comply. Key requirements:</p>
+      <ul>
+        <li><strong>Encryption at rest:</strong> All patient data encrypted in the database (AES-256)</li>
+        <li><strong>Encryption in transit:</strong> All communication over TLS 1.3</li>
+        <li><strong>Access control:</strong> Only authorized users can access patient data (RBAC)</li>
+        <li><strong>Audit logging:</strong> Every access to PHI is logged (who, what, when, from where)</li>
+        <li><strong>Data de-identification:</strong> Patient data sent to OpenAI has PII stripped</li>
+        <li><strong>Minimum necessary:</strong> Users only see the minimum data needed for their role</li>
+      </ul>
+
+      <h3>What are WebSockets?</h3>
+      <p>Normal HTTP is request-response: the client asks, the server answers, the connection closes. WebSockets maintain a <strong>persistent connection</strong> so the server can push data to the client at any time.</p>
+      <p>We need this for: live vitals streaming (heart rate updates every second), real-time monitoring alerts (doctor needs instant notification), streaming AI responses (token-by-token chat), and push notifications.</p>
+
+      <h3>What is a Task Queue (Celery)?</h3>
+      <p>Some operations take too long for a synchronous API response: analyzing a medical report with GPT-4o Vision (5-10 seconds), sending notifications to hundreds of users, or processing batch vitals uploads from IoT devices.</p>
+      <p><strong>Celery</strong> accepts these jobs and processes them in the background. The API returns immediately with "processing" status, and the client is notified via WebSocket when the job completes. Redis acts as the message broker between the API and Celery workers.</p>
+
+      <h3>What is RAG (Retrieval Augmented Generation)?</h3>
+      <p>GPT-4o is powerful but its training data has a cutoff date, and it doesn't know about our specific medical knowledge base. <strong>RAG</strong> solves this:</p>
+      <ol>
+        <li><strong>Index:</strong> We convert medical literature (ICD-10 codes, drug interactions, symptom-disease mappings) into vector embeddings using <code>text-embedding-3-large</code> and store them in Pinecone</li>
+        <li><strong>Retrieve:</strong> When a patient asks about symptoms, we convert their query to a vector and find the most relevant medical knowledge from Pinecone</li>
+        <li><strong>Generate:</strong> We feed the retrieved context plus the patient's question to GPT-4o, which generates an answer grounded in our medical knowledge base</li>
+      </ol>
+      <p>This ensures our AI agents use up-to-date, verified medical information rather than relying solely on the model's training data.</p>
+
+      <h3>Unit, Integration, and E2E Tests</h3>
+      <p><strong>Unit tests</strong> test a single function or class in isolation. "Does the urgency scoring function return the right score for these inputs?" Fast, focused, many of them.</p>
+      <p><strong>Integration tests</strong> test how components work together. "Does the vitals API correctly save to PostgreSQL and sync to InfluxDB?" Tests real database interactions.</p>
+      <p><strong>E2E (End-to-End) tests</strong> simulate real user behavior. "Can a patient log in, start a symptom check, receive a diagnosis, and book an appointment?" Cypress drives a real browser through the full flow.</p>
+
+      <h3>What is Infrastructure as Code (Terraform)?</h3>
+      <p>Instead of clicking through the AWS console to create servers, databases, and networks, we define everything in <code>.tf</code> files. Run <code>terraform apply</code> and it creates the entire infrastructure. This means:</p>
+      <ul>
+        <li>Infrastructure changes are reviewed in PRs just like code</li>
+        <li>We can recreate the entire environment from scratch in minutes</li>
+        <li>No "tribal knowledge" about how the server was configured</li>
+      </ul>
+
+      <h3>What is Kubernetes?</h3>
+      <p>Kubernetes (K8s) manages Docker containers in production. It handles: auto-scaling (spin up more containers during traffic spikes), self-healing (restart crashed containers), rolling updates (deploy new versions without downtime), and load balancing (distribute requests across containers). We use AWS EKS (Elastic Kubernetes Service) as our managed K8s cluster.</p>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 7: GIT WORKFLOW ==================== -->
+<div class="section" id="git-workflow">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">7</span> Git Workflow &amp; Contributing</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <h3>Branch Naming Convention</h3>
+      <p>Format: <code>&lt;type&gt;/&lt;module&gt;/&lt;description&gt;</code></p>
+      <div class="table-wrap">
+      <table>
+        <tr><th>Type</th><th>Use For</th><th>Example</th></tr>
+        <tr><td><code>feature/</code></td><td>New functionality</td><td><code>feature/auth/jwt-login-refresh</code></td></tr>
+        <tr><td><code>fix/</code></td><td>Bug fixes</td><td><code>fix/vitals/null-spo2-handling</code></td></tr>
+        <tr><td><code>refactor/</code></td><td>Code restructuring</td><td><code>refactor/agents/base-agent-async</code></td></tr>
+        <tr><td><code>chore/</code></td><td>Config, deps, docs</td><td><code>chore/infra/docker-compose-setup</code></td></tr>
+      </table>
+      </div>
+      <p>Module names: <code>auth</code> | <code>patient</code> | <code>doctor</code> | <code>vitals</code> | <code>reports</code> | <code>medications</code> | <code>appointments</code> | <code>symptoms</code> | <code>triage</code> | <code>telemedicine</code> | <code>care-plan</code> | <code>chat</code> | <code>voice</code> | <code>agents</code> | <code>monitoring</code> | <code>notifications</code> | <code>admin</code> | <code>frontend</code> | <code>websocket</code> | <code>infra</code> | <code>db</code> | <code>docs</code></p>
+
+      <h3>Commit Message Format</h3>
+      <p>Format: <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code></p>
+      <pre><code>feat(auth): add JWT login and refresh token endpoints
+fix(vitals): handle null SpO2 values in batch upload
+chore(deps): upgrade openai to v1.35.0
+test(reports): add unit tests for lab value extraction
+docs(contributing): update PR template section</code></pre>
+
+      <h3>Step-by-Step Push Workflow</h3>
+      <ol class="steps">
+        <li>Pull latest main: <code>git checkout main && git pull origin main</code></li>
+        <li>Create your branch: <code>git checkout -b feature/module/your-description</code></li>
+        <li>Write your code. Commit often with proper messages.</li>
+        <li>Push your branch: <code>git push -u origin feature/module/your-description</code></li>
+        <li>Open a Pull Request on GitHub targeting the <code>main</code> branch</li>
+        <li>Add PK as reviewer (and your squad lead if applicable)</li>
+        <li>Wait for approval + CI green, then Squash Merge</li>
+        <li>Delete your branch after merge</li>
+      </ol>
+
+      <h3>PR Review Process</h3>
+      <ul>
+        <li>Every PR must target <code>main</code></li>
+        <li>Title follows commit format: <code>feat(module): description</code></li>
+        <li>Include: Task ID, what changed, how to test, screenshots (for frontend)</li>
+        <li>At least 1 approval required (PK or squad lead)</li>
+        <li>All CI checks must pass</li>
+        <li>Use <strong>Squash Merge</strong> (not regular merge or rebase)</li>
+      </ul>
+
+      <h3>Rules You Must Never Break</h3>
+      <div class="info-box danger">
+        <div class="ib-title">Rule A: NEVER push directly to main</div>
+        <p>Why: Direct pushes bypass code review and CI. A single bug could take down production or corrupt patient data. All code goes through PRs.</p>
+      </div>
+      <div class="info-box danger">
+        <div class="ib-title">Rule B: NEVER merge your own PR without approval</div>
+        <p>Why: A second pair of eyes catches bugs, security issues, and architectural problems. Healthcare software requires extra scrutiny.</p>
+      </div>
+      <div class="info-box danger">
+        <div class="ib-title">Rule C: NEVER put secrets, passwords, or API keys in code</div>
+        <p>Why: Git history is permanent. Even if you delete a secret later, it's in the commit history forever. Use <code>.env</code> files (gitignored) and AWS Secrets Manager.</p>
+      </div>
+      <div class="info-box danger">
+        <div class="ib-title">Rule D: NEVER combine unrelated changes in one branch</div>
+        <p>Why: If one change needs to be reverted, you'd have to revert the other too. Each branch = one logical change.</p>
+      </div>
+      <div class="info-box danger">
+        <div class="ib-title">Rule E: ALWAYS pull latest main before creating a new branch</div>
+        <p>Why: Starting from stale code means merge conflicts and integration issues later.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 8: FILE MAP ==================== -->
+<div class="section" id="file-map">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">8</span> Complete File Map</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <div class="info-box warn">
+        <div class="ib-title">Implemented vs Planned Files</div>
+        <p>This file map shows the <strong>complete planned project structure</strong>. Files marked with <strong>[EXISTS]</strong> are already created. All other files are planned and will be created as the team implements each phase. The project is currently in <strong>Phase 1 (Foundation)</strong> with scaffolding complete.</p>
+      </div>
+      <p>Color coding: <span class="fp fp-root">root</span> <span class="fp fp-backend">backend</span> <span class="fp fp-frontend">frontend</span> <span class="fp fp-infra">infra</span> <span class="fp fp-docs">docs</span> <span class="fp fp-ai">AI</span> <span class="fp fp-data">data</span></p>
+
+      <!-- ROOT FILES -->
+      <h3>Root Files</h3>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-root">CLAUDE.md</span> [EXISTS]</div><div class="fe-desc">Master PRD (Product Requirements Document). The single source of truth for the entire project &mdash; tech stack, architecture, DB schema, API endpoints, features, security requirements. Claude Code reads this automatically.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-root">README.md</span> [EXISTS]</div><div class="fe-desc">Project overview for anyone visiting the repo. First thing people see on GitHub.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-root">CONTRIBUTING.md</span> [EXISTS]</div><div class="fe-desc">Rules every team member MUST follow. Branch naming, commit format, PR process, coding standards, team squads.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-root">Makefile</span> [EXISTS]</div><div class="fe-desc">Shortcut commands. Type <code>make dev</code> instead of remembering long Docker commands. Defines targets for build, test, lint, migrate, seed.</div><div class="fe-owner">Owner: PK / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-root">docker-compose.yml</span> [EXISTS]</div><div class="fe-desc">Defines development services (PostgreSQL, Redis, InfluxDB, Elasticsearch, MinIO, Flask backend, Celery worker, Next.js frontend). One <code>docker-compose up</code> starts everything.</div><div class="fe-owner">Owner: PK / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-root">docker-compose.prod.yml</span></div><div class="fe-desc">Planned: Production overrides with gunicorn, production environment variables. Will be created in Phase 6.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-root">.gitignore</span> [EXISTS]</div><div class="fe-desc">Tells Git which files NOT to track: node_modules, .env, __pycache__, .venv, .DS_Store, *.pyc, etc.</div><div class="fe-owner">Owner: PK</div></div>
+      </div>
+
+      <!-- GITHUB -->
+      <h3>.github/ &mdash; GitHub Configuration</h3>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">workflows/ci.yml</span> [EXISTS]</div><div class="fe-desc">Runs lint + tests automatically on every Pull Request. Ensures no broken code gets merged.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">workflows/cd-staging.yml</span></div><div class="fe-desc">Planned: Auto-deploys to staging environment when code is merged to the <code>develop</code> branch.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">workflows/cd-production.yml</span></div><div class="fe-desc">Planned: Auto-deploys to production when code is merged to <code>main</code>. Includes health checks and rollback on failure.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">workflows/security-scan.yml</span></div><div class="fe-desc">Planned: Weekly security vulnerability scans using tools like Trivy and Bandit.</div><div class="fe-owner">Owner: Ashish / Pallavi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">PULL_REQUEST_TEMPLATE.md</span> [EXISTS]</div><div class="fe-desc">Template that auto-fills when creating a PR with sections for Task ID, Description, How to Test, and Screenshots.</div><div class="fe-owner">Owner: PK</div></div>
+      </div>
+
+      <!-- BACKEND CORE -->
+      <h3>backend/ &mdash; Flask API Server</h3>
+      <h4>Core Configuration Files</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">requirements.txt</span> [EXISTS]</div><div class="fe-desc">Python package list. Run <code>pip install -r requirements.txt</code> to install all dependencies.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">requirements-dev.txt</span> [EXISTS]</div><div class="fe-desc">Dev-only packages: pytest, black, ruff, mypy, factory-boy. Not installed in production.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">pyproject.toml</span> [EXISTS]</div><div class="fe-desc">Python project configuration: tool settings for black (formatter), ruff (linter), mypy (type checker), pytest (test runner).</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">.env.example</span> [EXISTS]</div><div class="fe-desc">Template for environment variables. Copy to <code>.env</code> and fill in your secrets. Never commit <code>.env</code> itself.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">Dockerfile</span> [EXISTS]</div><div class="fe-desc">Instructions to build the backend Docker image: installs Python, copies code, installs dependencies, sets entry point.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">wsgi.py</span> [EXISTS]</div><div class="fe-desc">Entry point for production server. Gunicorn loads this file to create the Flask app.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">celery_worker.py</span> [EXISTS]</div><div class="fe-desc">Entry point for Celery background worker. Imports the Celery app and discovers all task modules.</div><div class="fe-owner">Owner: Ashish</div></div>
+      </div>
+
+      <h4>App Factory &amp; Config</h4>
+      <div class="info-box info">
+        <div class="ib-title">What is the App Factory pattern?</div>
+        <p>Instead of creating the Flask app at module level, we have a <code>create_app()</code> function. This lets us create multiple app instances with different configs (development, testing, production) and avoids circular import issues.</p>
+      </div>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/__init__.py</span> [EXISTS]</div><div class="fe-desc">The Flask app factory. Creates and configures the Flask app, registers all extensions, blueprints, middleware, and error handlers. This is the HEART of the backend. <strong>Connects to:</strong> config.py, extensions.py, all blueprints, all middleware.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/config.py</span> [EXISTS]</div><div class="fe-desc">Configuration classes (DevelopmentConfig, TestingConfig, ProductionConfig). Reads from environment variables. Never hardcode secrets here.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/extensions.py</span> [EXISTS]</div><div class="fe-desc">Initializes Flask extensions (SQLAlchemy, JWT, CORS, SocketIO, rate limiter, mail). Extensions created here, initialized with app in the factory.</div><div class="fe-owner">Owner: PK</div></div>
+      </div>
+
+      <h4>Models (Database Tables as Python Classes)</h4>
+      <div class="info-box tip">
+        <div class="ib-title">What is an ORM?</div>
+        <p><strong>ORM = Object Relational Mapper.</strong> SQLAlchemy lets you write Python classes instead of SQL. A Python class maps to a database table. A class instance maps to a row. Attributes map to columns. This makes code readable and prevents SQL injection.</p>
+      </div>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/user.py</span> [EXISTS]</div><div class="fe-desc">User accounts (patients, doctors, admins, nurses share one table, distinguished by <code>role</code> field). Stores email, password hash, MFA settings.</div><div class="fe-owner">Owner: Pallavi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/patient.py</span></div><div class="fe-desc">Patient-specific profile: DOB, blood type, height, weight, insurance, emergency contact, primary physician link.</div><div class="fe-owner">Owner: Sanjay</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/doctor.py</span></div><div class="fe-desc">Doctor-specific data: license number, specialization, department, consultation fee, telemedicine availability.</div><div class="fe-owner">Owner: Sanjay</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/vitals.py</span></div><div class="fe-desc">Vital sign readings: heart rate, BP (systolic/diastolic), SpO2, temperature, respiratory rate, blood glucose. Summary in PostgreSQL; raw high-frequency data in InfluxDB.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/report.py</span></div><div class="fe-desc">Medical reports: file URL, report type, AI analysis status, extracted lab values (JSONB), AI summary, flagged abnormalities.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/medication.py</span></div><div class="fe-desc">Medications and prescriptions: drug name, dosage, frequency, route, start/end date, status, prescribing doctor link.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/appointment.py</span></div><div class="fe-desc">Appointments: patient, doctor, type (in-person/telemedicine/follow-up/emergency), status, scheduling, telemedicine room link.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/symptom_session.py</span></div><div class="fe-desc">AI symptom check conversations: complaint, full conversation log (JSONB), differential diagnosis, urgency score, ESI level.</div><div class="fe-owner">Owner: Chidi / Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/care_plan.py</span></div><div class="fe-desc">Care plans with goals and activities. Supports AI-generated plans. Tracks status, progress, and adherence.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/device.py</span></div><div class="fe-desc">IoT device registry: device type, manufacturer, model, serial number, firmware version, battery level, last sync.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/alert.py</span></div><div class="fe-desc">Monitoring alerts: type, severity (info/warning/critical/emergency), vital value that breached threshold, status, escalation level.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/conversation.py</span></div><div class="fe-desc">Chat and voice conversation logs: messages (JSONB), conversation type, agent type, metadata.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/notification.py</span></div><div class="fe-desc">User notifications: type, title, body, channel (push/SMS/email/in-app), read status.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/models/audit_log.py</span></div><div class="fe-desc">HIPAA audit trail: who accessed what, when, from what IP. Critical for compliance. Never deleted.</div><div class="fe-owner">Owner: Pallavi</div></div>
+      </div>
+
+      <h4>API Routes (Endpoint Files)</h4>
+      <div class="info-box info">
+        <div class="ib-title">What is a Blueprint?</div>
+        <p>Flask Blueprints organize routes into modules. Each blueprint owns a section of the API (e.g., all <code>/api/v1/patients/*</code> endpoints live in the patients blueprint). This keeps files focused and avoids one massive routes file.</p>
+      </div>
+      <div class="info-box info">
+        <div class="ib-title">What is REST?</div>
+        <p>REST defines how API endpoints work: <strong>GET</strong> = read data, <strong>POST</strong> = create data, <strong>PUT</strong> = update data, <strong>DELETE</strong> = remove data. Each URL represents a resource (e.g., <code>/api/v1/patients/123</code> = patient with ID 123).</p>
+      </div>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/auth.py</span></div><div class="fe-desc">Registration, login, logout, token refresh, password reset, email verification, MFA enable/verify. <strong>Connects to:</strong> auth_service, user model.</div><div class="fe-owner">Owner: Pallavi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/patients.py</span></div><div class="fe-desc">Patient CRUD, medical history, allergies, timeline, AI-generated summary. <strong>Connects to:</strong> patient_service, patient/user models.</div><div class="fe-owner">Owner: Sanjay</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/doctors.py</span></div><div class="fe-desc">Doctor profiles, listings, search by specialization. <strong>Connects to:</strong> doctor_service, doctor model.</div><div class="fe-owner">Owner: Sanjay</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/vitals.py</span></div><div class="fe-desc">Vitals recording, history, trends, anomaly detection, batch upload from IoT. <strong>Connects to:</strong> vitals_service, InfluxDB.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/reports.py</span></div><div class="fe-desc">Report upload, AI analysis trigger, lab value extraction, summary, comparison. <strong>Connects to:</strong> report_service, S3, Report Reader Agent.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/medications.py</span></div><div class="fe-desc">Medication management, interaction checks, schedule, adherence logging, drug search. <strong>Connects to:</strong> medication_service, Drug Interaction Agent.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/appointments.py</span></div><div class="fe-desc">Booking, scheduling, availability, cancellation. <strong>Connects to:</strong> appointment_service, notification_service.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/symptoms.py</span></div><div class="fe-desc">Symptom check sessions, multi-turn messaging, body map, quick triage. <strong>Connects to:</strong> symptom_service, Symptom Analyst + Triage Agents.</div><div class="fe-owner">Owner: Chidi / Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/care_plans.py</span></div><div class="fe-desc">Care plan CRUD, goal management, AI generation, adherence reports. <strong>Connects to:</strong> care_plan_service, Follow-Up Agent.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/telemedicine.py</span></div><div class="fe-desc">Video session management: create, join, end, get transcript, get AI clinical notes. <strong>Connects to:</strong> telemedicine_service, Daily.co SDK.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/chat.py</span></div><div class="fe-desc">AI chat interface: send message, list conversations, get history. <strong>Connects to:</strong> Orchestrator, conversation model.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/voice.py</span></div><div class="fe-desc">Voice transcription (Whisper), speech synthesis (TTS), voice session management. <strong>Connects to:</strong> Voice Agent.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/monitoring.py</span></div><div class="fe-desc">Alert management, monitoring wall data, threshold configuration. <strong>Connects to:</strong> monitoring_service, Monitoring Agent.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/devices.py</span></div><div class="fe-desc">IoT device registration, updates, data ingestion. <strong>Connects to:</strong> device_service, InfluxDB.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/notifications.py</span></div><div class="fe-desc">Notification delivery, read status, preferences. <strong>Connects to:</strong> notification_service, WebSocket.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/analytics.py</span></div><div class="fe-desc">Health analytics, doctor performance, system stats, AI usage metrics. <strong>Connects to:</strong> analytics_service.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/admin.py</span></div><div class="fe-desc">User management, role changes, audit log viewer, system health, AI config. <strong>Admin-only.</strong></div><div class="fe-owner">Owner: Pallavi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/v1/health.py</span> [EXISTS]</div><div class="fe-desc">Health check endpoint. Returns status of all dependent services (DB, Redis, etc.). Used by Kubernetes liveness probes.</div><div class="fe-owner">Owner: PK</div></div>
+      </div>
+
+      <h4>WebSocket Handlers</h4>
+      <div class="info-box info">
+        <div class="ib-title">Why WebSockets?</div>
+        <p>HTTP is request-response: client asks, server answers. WebSockets keep a persistent connection open so the server can push data to the client instantly. Essential for live vitals, streaming AI chat, and real-time alerts.</p>
+      </div>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/websocket/vitals_stream.py</span></div><div class="fe-desc">Pushes live vitals data to the monitoring dashboard. Updates every second per monitored patient.</div><div class="fe-owner">Owner: Ashish / Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/websocket/chat_stream.py</span></div><div class="fe-desc">Streams AI responses token by token for a real-time typing effect in the chat UI.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/websocket/monitoring_events.py</span></div><div class="fe-desc">Pushes alert events and patient status changes to doctors' monitoring wall in real-time.</div><div class="fe-owner">Owner: Ashish / Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/api/websocket/notification_stream.py</span></div><div class="fe-desc">Pushes new notifications to connected users without them needing to refresh.</div><div class="fe-owner">Owner: Ashish</div></div>
+      </div>
+
+      <h4>Services (Business Logic Layer)</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/auth_service.py</span></div><div class="fe-desc">Registration, login/logout, password hashing, token generation, MFA, email verification logic.</div><div class="fe-owner">Owner: Pallavi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/patient_service.py</span></div><div class="fe-desc">Patient CRUD, medical history management, allergy tracking, timeline generation.</div><div class="fe-owner">Owner: Sanjay</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/doctor_service.py</span></div><div class="fe-desc">Doctor profile management, availability calculation, search/filter logic.</div><div class="fe-owner">Owner: Sanjay</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/vitals_service.py</span></div><div class="fe-desc">Vitals recording (PostgreSQL + InfluxDB dual write), trend analysis, anomaly detection triggers.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/report_service.py</span></div><div class="fe-desc">Report upload to S3/MinIO, triggers AI analysis via Celery, lab value management.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/medication_service.py</span></div><div class="fe-desc">Medication CRUD, prescription management, drug interaction checks, adherence tracking.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/appointment_service.py</span></div><div class="fe-desc">Booking logic, conflict checking, availability queries, cancellation with notifications.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/symptom_service.py</span></div><div class="fe-desc">Symptom session management, agent invocation, result storage.</div><div class="fe-owner">Owner: Chidi / Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/care_plan_service.py</span></div><div class="fe-desc">Care plan CRUD, goal progress tracking, AI plan generation, adherence reporting.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/telemedicine_service.py</span></div><div class="fe-desc">Daily.co room management, session lifecycle, recording and transcription handling.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/notification_service.py</span></div><div class="fe-desc">Multi-channel notification delivery (push, SMS, email, in-app), preference management.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/monitoring_service.py</span></div><div class="fe-desc">Alert management, escalation chains, threshold configuration, monitoring dashboard data.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/analytics_service.py</span></div><div class="fe-desc">Health analytics computation, doctor performance metrics, system-wide statistics.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/device_service.py</span></div><div class="fe-desc">IoT device registration, data ingestion, firmware tracking, sync management.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/file_storage_service.py</span></div><div class="fe-desc">S3/MinIO operations: upload, download, delete, presigned URLs for secure file access.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/search_service.py</span></div><div class="fe-desc">Elasticsearch operations: indexing, full-text search, autocomplete, medical record search.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/services/audit_service.py</span></div><div class="fe-desc">HIPAA audit logging: records every PHI access with user, action, resource, timestamp, IP address.</div><div class="fe-owner">Owner: Pallavi</div></div>
+      </div>
+
+      <h4>Agents (AI Layer)</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/base_agent.py</span></div><div class="fe-desc">Abstract base class all agents inherit from. Defines interface: process(), use_tool(), get_memory(). Handles OpenAI API calls, error handling, retry logic.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/orchestrator.py</span></div><div class="fe-desc">Central router. Classifies intent, selects specialist agent(s), can run agents in parallel, aggregates responses.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/symptom_analyst.py</span></div><div class="fe-desc">Symptom Analyst Agent (GPT-4o): multi-turn interviews, differential diagnosis, urgency scoring.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/report_reader.py</span></div><div class="fe-desc">Report Reader Agent (GPT-4o Vision): extracts structured data from medical reports, flags abnormalities.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/triage_agent.py</span></div><div class="fe-desc">Triage Agent (GPT-4o-mini): fast ESI assignment, red flag detection, emergency routing. Must respond &lt;2s.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/voice_agent.py</span></div><div class="fe-desc">Voice Agent (Whisper + TTS): speech-to-text, text-to-speech, medical entity extraction, ambient notes.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/drug_interaction_agent.py</span></div><div class="fe-desc">Drug Interaction Agent (GPT-4o): pairwise drug analysis, allergy cross-reference, dosage verification.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/monitoring_agent.py</span></div><div class="fe-desc">Monitoring Agent (GPT-4o-mini): continuous vitals monitoring, anomaly detection, early warning scores.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/followup_agent.py</span></div><div class="fe-desc">Follow-Up Agent (GPT-4o): care plan generation, adherence tracking, reminder scheduling.</div><div class="fe-owner">Owner: Manish</div></div>
+      </div>
+
+      <h4>Agent Tools, Memory &amp; Prompts</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/tools/medical_kb.py</span></div><div class="fe-desc">Medical knowledge base tools: RAG search over Pinecone embeddings of medical literature.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/tools/patient_history.py</span></div><div class="fe-desc">Query patient medical history, allergies, medications from PostgreSQL.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/tools/urgency_scoring.py</span></div><div class="fe-desc">Rule-based + ML urgency score calculation.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/tools/drug_database.py</span></div><div class="fe-desc">Drug interaction database queries via Pinecone embeddings.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/tools/vitals_analysis.py</span></div><div class="fe-desc">Vitals anomaly detection: statistical methods (z-score, moving average) on InfluxDB data.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/tools/report_parsing.py</span></div><div class="fe-desc">Report text extraction, lab value parsing, abnormality identification.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/tools/scheduling.py</span></div><div class="fe-desc">Appointment scheduling integration for Follow-Up Agent.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/tools/notification_tools.py</span></div><div class="fe-desc">Alert and notification triggers for agents.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/memory/context_manager.py</span></div><div class="fe-desc">Short-term conversation context stored in Redis. TTL-based expiry.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/memory/knowledge_store.py</span></div><div class="fe-desc">Long-term knowledge retrieval from Pinecone vector database.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/memory/patient_memory.py</span></div><div class="fe-desc">Per-patient memory management: recent interactions, preferences, context window.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/prompts/system_prompts.py</span></div><div class="fe-desc">System prompts for each agent. Kept separate for versioning and A/B testing.</div><div class="fe-owner">Owner: Chidi / Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/prompts/symptom_prompts.py</span></div><div class="fe-desc">Symptom analysis-specific prompts and few-shot examples.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/prompts/report_prompts.py</span></div><div class="fe-desc">Report reading prompts, extraction templates.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/prompts/triage_prompts.py</span></div><div class="fe-desc">Triage-specific prompts, ESI level definitions, red flag patterns.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-ai">app/agents/prompts/care_plan_prompts.py</span></div><div class="fe-desc">Care plan generation prompts, goal templates.</div><div class="fe-owner">Owner: Manish</div></div>
+      </div>
+
+      <h4>Middleware</h4>
+      <div class="info-box info">
+        <div class="ib-title">What is middleware?</div>
+        <p>Middleware is code that runs before and/or after every request. Think of it as a pipeline: Request &rarr; Auth Middleware &rarr; Rate Limiter &rarr; HIPAA Audit &rarr; Your Route &rarr; Error Handler &rarr; Response Logger &rarr; Response.</p>
+      </div>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/middleware/auth_middleware.py</span></div><div class="fe-desc">Validates JWT token on every request, extracts user identity, enforces RBAC permissions.</div><div class="fe-owner">Owner: Pallavi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/middleware/hipaa_audit.py</span></div><div class="fe-desc">Logs every PHI (Protected Health Information) access to the audit_logs table. Who accessed what, when, from where.</div><div class="fe-owner">Owner: Pallavi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/middleware/rate_limiter.py</span></div><div class="fe-desc">Prevents API abuse: 100 requests/minute general, 10/minute for auth endpoints. Uses Redis for counting.</div><div class="fe-owner">Owner: Pallavi / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/middleware/error_handler.py</span></div><div class="fe-desc">Catches all unhandled exceptions, returns consistent JSON error responses, logs errors with structlog.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/middleware/request_logger.py</span></div><div class="fe-desc">Logs every request with structlog: method, path, status code, duration, user ID, request ID.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/middleware/cors.py</span></div><div class="fe-desc">CORS (Cross-Origin Resource Sharing) configuration. Allows the frontend (port 3000) to call the backend (port 5000).</div><div class="fe-owner">Owner: PK</div></div>
+      </div>
+
+      <h4>Utils, Tasks &amp; Integrations</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/utils/encryption.py</span></div><div class="fe-desc">PHI encryption/decryption utilities using AES-256. Used for sensitive data at rest.</div><div class="fe-owner">Owner: Pallavi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/utils/validators.py</span></div><div class="fe-desc">Input validation helpers: email format, phone number, date ranges, medical codes.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/utils/formatters.py</span></div><div class="fe-desc">Response formatting: consistent JSON structure, pagination helpers, error formatting.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/utils/date_utils.py</span></div><div class="fe-desc">Date/time utilities: timezone handling, age calculation, scheduling helpers.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/utils/medical_constants.py</span></div><div class="fe-desc">ICD-10 codes, LOINC codes, vital sign reference ranges, ESI level definitions.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/utils/file_utils.py</span></div><div class="fe-desc">File handling: MIME type detection, file size validation, secure filename generation.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/tasks/monitoring_tasks.py</span></div><div class="fe-desc">Background vitals processing: periodic checks, anomaly detection batch jobs.</div><div class="fe-owner">Owner: Prabeen / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/tasks/report_processing.py</span></div><div class="fe-desc">Async report analysis: sends report to Report Reader Agent, stores results.</div><div class="fe-owner">Owner: Vikash / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/tasks/notification_tasks.py</span></div><div class="fe-desc">Async notification delivery via push, SMS (Twilio), email (SendGrid).</div><div class="fe-owner">Owner: Arjun / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/tasks/embedding_tasks.py</span></div><div class="fe-desc">Periodic medical knowledge base embedding updates in Pinecone.</div><div class="fe-owner">Owner: Chidi / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/tasks/analytics_tasks.py</span></div><div class="fe-desc">Periodic analytics computation: aggregate stats, trend calculations.</div><div class="fe-owner">Owner: Prabeen / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/tasks/cleanup_tasks.py</span></div><div class="fe-desc">Data retention enforcement, expired session cleanup, old log purging.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/integrations/openai_client.py</span></div><div class="fe-desc">OpenAI API wrapper: handles authentication, retries, rate limiting, error handling for all GPT/Whisper/TTS calls.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/integrations/pinecone_client.py</span></div><div class="fe-desc">Pinecone vector DB client: upsert embeddings, similarity search, index management.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/integrations/influxdb_client.py</span></div><div class="fe-desc">InfluxDB client: write vitals data points, time-range queries, downsampling.</div><div class="fe-owner">Owner: Prabeen</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/integrations/elasticsearch_client.py</span></div><div class="fe-desc">Elasticsearch client: index documents, full-text search, autocomplete queries.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/integrations/s3_client.py</span></div><div class="fe-desc">S3/MinIO client: upload/download files, generate presigned URLs, manage buckets.</div><div class="fe-owner">Owner: Vikash</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/integrations/twilio_client.py</span></div><div class="fe-desc">SMS notification delivery via Twilio API.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/integrations/sendgrid_client.py</span></div><div class="fe-desc">Email notification delivery via SendGrid API.</div><div class="fe-owner">Owner: Arjun</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">app/integrations/iot_gateway.py</span></div><div class="fe-desc">IoT device gateway: MQTT message handling, device authentication, data normalization.</div><div class="fe-owner">Owner: Prabeen</div></div>
+      </div>
+
+      <h4>Tests</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">tests/conftest.py</span></div><div class="fe-desc">Shared test fixtures: test app instance, test client, test database, authenticated user fixtures.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">tests/factories/</span></div><div class="fe-desc">Factory Boy classes that generate fake test data: user_factory, patient_factory, vitals_factory. Create realistic medical data for tests.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">tests/unit/</span></div><div class="fe-desc">Unit tests for services, agents, and utils. Fast, no database. Directory structure mirrors <code>app/</code>.</div><div class="fe-owner">Owner: Everyone (own modules)</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">tests/integration/</span></div><div class="fe-desc">Integration tests: API endpoint tests, WebSocket tests, agent integration tests. Uses test database.</div><div class="fe-owner">Owner: Everyone (own modules)</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">tests/e2e/</span></div><div class="fe-desc">End-to-end workflow tests: complete patient journeys through the system.</div><div class="fe-owner">Owner: PK / Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">scripts/seed_db.py</span></div><div class="fe-desc">Seeds the database with sample patients, doctors, and appointments for development.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-backend">scripts/seed_knowledge_base.py</span></div><div class="fe-desc">Loads medical knowledge JSON files, generates embeddings, and uploads to Pinecone.</div><div class="fe-owner">Owner: Chidi</div></div>
+      </div>
+
+      <!-- FRONTEND -->
+      <h3>frontend/ &mdash; Next.js Application</h3>
+
+      <h4>Configuration Files</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">package.json</span> [EXISTS]</div><div class="fe-desc">Node.js project manifest: dependencies, scripts (dev, build, test, lint).</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">next.config.js</span> [EXISTS]</div><div class="fe-desc">Next.js configuration: image domains, environment variables, redirects, API rewrites.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">tailwind.config.ts</span> [EXISTS]</div><div class="fe-desc">Tailwind CSS configuration: custom colors (medical theme), fonts, spacing, component tokens.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">tsconfig.json</span> [EXISTS]</div><div class="fe-desc">TypeScript configuration: strict mode, path aliases (@/components, @/lib), target ES2022.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">.env.local.example</span> [EXISTS]</div><div class="fe-desc">Template for frontend environment variables. Copy to <code>.env.local</code> and configure.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">Dockerfile</span> [EXISTS]</div><div class="fe-desc">Instructions to build the frontend Docker image for containerized deployment.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/layout.tsx</span> [EXISTS]</div><div class="fe-desc">Root layout: wraps all pages with global providers, fonts, and base HTML structure.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/page.tsx</span> [EXISTS]</div><div class="fe-desc">Landing page: the first page visitors see at the root URL.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/globals.css</span> [EXISTS]</div><div class="fe-desc">Global CSS styles and Tailwind base/component/utility imports.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+      </div>
+
+      <h4>Pages &mdash; Auth Route Group <code>(auth)/</code></h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(auth)/login/page.tsx</span></div><div class="fe-desc">Login page with email/password form and OAuth buttons. Calls <code>POST /api/v1/auth/login</code>. Used by all roles.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(auth)/register/page.tsx</span></div><div class="fe-desc">Registration page with role selection (patient/doctor). Multi-step form with Zod validation.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(auth)/forgot-password/page.tsx</span></div><div class="fe-desc">Password reset request form. Calls <code>POST /api/v1/auth/forgot-password</code>.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(auth)/verify-email/page.tsx</span></div><div class="fe-desc">Email verification page. Processes token from email link.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+      </div>
+
+      <h4>Pages &mdash; Patient Route Group <code>(patient)/</code></h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/dashboard/page.tsx</span></div><div class="fe-desc">Patient home dashboard: health summary, upcoming appointments, recent vitals, medication reminders, quick actions. Calls multiple APIs.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/symptoms/page.tsx</span></div><div class="fe-desc">Symptom checker main: start new check via chat, voice, or body map. Lists past sessions.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/symptoms/[sessionId]/page.tsx</span></div><div class="fe-desc">Active symptom session: multi-turn chat with AI, shows diagnosis results when complete.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/reports/page.tsx</span></div><div class="fe-desc">All reports list with filters. Shows AI analysis status badges. Calls <code>GET /api/v1/reports/:patientId</code>.</div><div class="fe-owner">Owner: Siddhartha / Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/reports/upload/page.tsx</span></div><div class="fe-desc">Report upload page: drag-and-drop PDF/image upload with progress bar.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/reports/[reportId]/page.tsx</span></div><div class="fe-desc">Report detail: PDF viewer, extracted lab values table with color-coded abnormalities, AI summary, trend chart.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/medications/page.tsx</span></div><div class="fe-desc">Current medications list with status badges. Calls <code>GET /api/v1/medications/:patientId</code>.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/medications/interactions/page.tsx</span></div><div class="fe-desc">Drug interaction checker: enter medications, see pairwise interaction analysis from Drug Interaction Agent.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/medications/schedule/page.tsx</span></div><div class="fe-desc">Medication schedule calendar: daily/weekly view of when to take each medication.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/vitals/page.tsx</span></div><div class="fe-desc">Vitals dashboard: real-time charts for HR, BP, SpO2, temperature. Uses WebSocket for live updates.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/vitals/history/page.tsx</span></div><div class="fe-desc">Historical vitals with date range picker and trend analysis.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/vitals/devices/page.tsx</span></div><div class="fe-desc">Connected IoT devices: list, pair new device, battery status, sync history.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/appointments/page.tsx</span></div><div class="fe-desc">Upcoming appointments list with join-video buttons for telemedicine.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/appointments/book/page.tsx</span></div><div class="fe-desc">Book appointment: select doctor, choose date/time from availability, select type.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/telemedicine/[sessionId]/page.tsx</span></div><div class="fe-desc">Active video call with Daily.co SDK. Shows call controls, participant grid, AI sidebar.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/care-plan/page.tsx</span></div><div class="fe-desc">Active care plans: goals, activities, adherence chart, milestone cards.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/chat/page.tsx</span></div><div class="fe-desc">AI chat assistant: streaming responses, suggestion chips, conversation history.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(patient)/voice/page.tsx</span></div><div class="fe-desc">Voice assistant: recording interface, waveform visualizer, real-time transcript.</div><div class="fe-owner">Owner: Prodip</div></div>
+      </div>
+
+      <h4>Pages &mdash; Doctor Route Group <code>(doctor)/</code></h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(doctor)/dashboard/page.tsx</span></div><div class="fe-desc">Doctor home: patient panel overview, today's schedule, active alerts, AI copilot quick access.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(doctor)/patients/page.tsx</span></div><div class="fe-desc">Patient list: search, filter by condition, sort by urgency. For doctors only.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(doctor)/patients/[patientId]/page.tsx</span></div><div class="fe-desc">Patient overview: summary card, recent vitals, active medications, latest reports.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(doctor)/monitoring/page.tsx</span></div><div class="fe-desc">Real-time monitoring wall: grid of all monitored patients, color-coded status, sparklines, alert feed.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(doctor)/monitoring/alerts/page.tsx</span></div><div class="fe-desc">Active alerts with acknowledge/resolve/escalate actions.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(doctor)/prescriptions/new/page.tsx</span></div><div class="fe-desc">New prescription form with automatic drug interaction check from AI.</div><div class="fe-owner">Owner: Siddhartha / Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(doctor)/analytics/page.tsx</span></div><div class="fe-desc">Clinical analytics: patient outcomes, consultation stats, AI accuracy feedback.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+      </div>
+
+      <h4>Pages &mdash; Admin Route Group <code>(admin)/</code></h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(admin)/dashboard/page.tsx</span></div><div class="fe-desc">Admin overview: system health, user counts, AI usage, recent audit events.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(admin)/users/page.tsx</span></div><div class="fe-desc">User management: list all users, change roles, activate/deactivate accounts.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(admin)/audit-logs/page.tsx</span></div><div class="fe-desc">HIPAA audit trail viewer: searchable log of all PHI access events.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(admin)/system-health/page.tsx</span></div><div class="fe-desc">System monitoring: service status, API latency, error rates, Grafana embeds.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/app/(admin)/ai-config/page.tsx</span></div><div class="fe-desc">AI agent configuration: model selection, temperature, prompt versioning.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+      </div>
+
+      <h4>Components</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/ui/</span></div><div class="fe-desc">shadcn/ui primitives: button, card, dialog, input, select, table, toast, badge, tabs, dropdown-menu. Accessible, unstyled base components.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/layout/</span></div><div class="fe-desc">Layout components: header, sidebar, footer, mobile-nav, breadcrumbs. Used by all route group layouts.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/auth/</span></div><div class="fe-desc">Auth components: login-form, register-form, protected-route (redirects unauthenticated users).</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/chat/</span></div><div class="fe-desc">Chat UI: chat-window, message-bubble, typing-indicator, chat-input, suggestion-chips.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/voice/</span></div><div class="fe-desc">Voice UI: voice-recorder, audio-visualizer, voice-controls, transcript-display.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/symptoms/</span></div><div class="fe-desc">Symptom UI: body-map (interactive SVG), symptom-form, severity-slider, diagnosis-card, urgency-badge.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/reports/</span></div><div class="fe-desc">Report UI: report-uploader, report-viewer, lab-value-table, abnormality-highlight, trend-chart.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/vitals/</span></div><div class="fe-desc">Vitals UI: vitals-grid, heart-rate-chart, blood-pressure-chart, spo2-gauge, temperature-chart, real-time-monitor.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/medications/</span></div><div class="fe-desc">Medication UI: medication-list, interaction-alert, dosage-calendar, prescription-form.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/monitoring/</span></div><div class="fe-desc">Monitoring UI: patient-monitor-card, alert-feed, monitoring-wall, escalation-timeline.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/telemedicine/</span></div><div class="fe-desc">Telemedicine UI: video-call, call-controls, participant-grid, screen-share, consultation-notes.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/care-plan/</span></div><div class="fe-desc">Care Plan UI: care-plan-timeline, goal-tracker, adherence-chart, milestone-card.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/components/shared/</span></div><div class="fe-desc">Shared components: loading-skeleton, error-boundary, empty-state, confirmation-dialog, search-bar, pagination, date-range-picker, file-upload.</div><div class="fe-owner">Owner: Abhrajit</div></div>
+      </div>
+
+      <h4>Hooks, Lib, Stores &amp; Types</h4>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/hooks/</span></div><div class="fe-desc">Custom React hooks: use-auth, use-socket, use-voice-recorder, use-vitals-stream, use-chat, use-notifications, use-media-devices, use-debounce. Encapsulate reusable logic.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/lib/api-client.ts</span></div><div class="fe-desc">Axios instance with interceptors: auto-attaches JWT, handles token refresh, standardizes error format.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/lib/socket-client.ts</span></div><div class="fe-desc">Socket.IO client setup: connection management, event handlers, reconnection config.</div><div class="fe-owner">Owner: Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/lib/auth.ts</span></div><div class="fe-desc">NextAuth.js configuration: JWT strategy, session callbacks, provider setup.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/lib/validators.ts</span></div><div class="fe-desc">Zod schemas for all API response validation: ensure type safety at runtime.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/stores/</span></div><div class="fe-desc">Zustand stores: auth-store, chat-store, vitals-store, notification-store, ui-store. Client-side state management.</div><div class="fe-owner">Owner: Siddhartha / Prodip</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-frontend">src/types/</span></div><div class="fe-desc">TypeScript type definitions: patient.ts, doctor.ts, vitals.ts, reports.ts, medications.ts, appointments.ts, chat.ts, monitoring.ts, api.ts.</div><div class="fe-owner">Owner: Siddhartha</div></div>
+      </div>
+
+      <!-- INFRASTRUCTURE -->
+      <h3>infrastructure/ &mdash; DevOps (Planned &mdash; Phase 6)</h3>
+      <div class="info-box info">
+        <div class="ib-title">Not yet created</div>
+        <p>The <code>infrastructure/</code> directory will be created during Phase 6 (Deployment). These files define the production cloud infrastructure.</p>
+      </div>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">terraform/main.tf</span></div><div class="fe-desc">Root Terraform configuration: defines AWS provider, calls modules for VPC, EKS, RDS, Redis, S3, monitoring.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">terraform/variables.tf</span></div><div class="fe-desc">Input variables: region, instance sizes, CIDR blocks, environment name.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">terraform/modules/</span></div><div class="fe-desc">Reusable Terraform modules: vpc, eks, rds, redis, s3, monitoring. Each creates a specific AWS resource group.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">kubernetes/base/</span></div><div class="fe-desc">Base K8s manifests: namespace, frontend/backend/celery deployments, redis deployment, ingress rules.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">kubernetes/overlays/</span></div><div class="fe-desc">Environment-specific overrides: staging (fewer replicas, smaller instances) and production (auto-scaling, HA).</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-infra">nginx/nginx.conf</span></div><div class="fe-desc">Nginx reverse proxy config: SSL termination, request routing, rate limiting, static file serving, WebSocket upgrade.</div><div class="fe-owner">Owner: Ashish</div></div>
+      </div>
+
+      <!-- DATA -->
+      <h3>data/ &mdash; Seed &amp; Knowledge Base (Planned &mdash; Phase 3)</h3>
+      <div class="info-box info">
+        <div class="ib-title">Not yet created</div>
+        <p>The <code>data/</code> directory will be created during Phase 3 (AI Agents) when the RAG knowledge base is built. These files contain medical reference data for AI agents.</p>
+      </div>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-data">medical_knowledge/icd10_codes.json</span></div><div class="fe-desc">ICD-10 disease classification codes. Used by Symptom Analyst for structured diagnosis output and by RAG for disease knowledge.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-data">medical_knowledge/drug_interactions.json</span></div><div class="fe-desc">Drug interaction database. Loaded into Pinecone as embeddings for the Drug Interaction Agent's RAG pipeline.</div><div class="fe-owner">Owner: Manish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-data">medical_knowledge/lab_reference_ranges.json</span></div><div class="fe-desc">Reference ranges for lab tests (CBC, metabolic panels, etc.). Used by Report Reader Agent to flag abnormalities.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-data">medical_knowledge/symptom_disease_mapping.json</span></div><div class="fe-desc">Symptom-to-disease mappings. Core knowledge for Symptom Analyst Agent's differential diagnosis generation.</div><div class="fe-owner">Owner: Chidi</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-data">seed/sample_patients.json</span></div><div class="fe-desc">Sample patient records for development: realistic (but fake) patients with medical histories, allergies, and conditions.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-data">seed/sample_vitals.json</span></div><div class="fe-desc">Sample vital sign readings for development: time-series data for testing charts and monitoring.</div><div class="fe-owner">Owner: PK</div></div>
+      </div>
+
+      <!-- DOCS -->
+      <h3>docs/ &mdash; Documentation</h3>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">API_SPEC.md</span> [EXISTS]</div><div class="fe-desc">OpenAPI specification for all REST endpoints. Used to generate Swagger docs.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">ARCHITECTURE.md</span> [EXISTS]</div><div class="fe-desc">System design documentation: architecture decisions, data flow diagrams, agent design patterns.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">DB_SCHEMA.md</span> [EXISTS]</div><div class="fe-desc">Database schema documentation: all tables, columns, relationships, indexes.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">DEPLOYMENT.md</span></div><div class="fe-desc">Planned: Deployment guide for staging and production deployment. Will be created in Phase 6.</div><div class="fe-owner">Owner: Ashish</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">PRD.md</span> [EXISTS]</div><div class="fe-desc">Product Requirements Document: feature specifications, user stories, acceptance criteria.</div><div class="fe-owner">Owner: PK</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">learningguide.html</span> [EXISTS]</div><div class="fe-desc">This file. The comprehensive learning guide for the entire team.</div><div class="fe-owner">Owner: PK</div></div>
+      </div>
+
+      <!-- CLAUDE RULES -->
+      <h3>.claude/rules/ &mdash; AI Coding Rules [ALL FILES EXIST]</h3>
+      <div class="file-group">
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">00-index.md</span> [EXISTS]</div><div class="fe-desc">Index of all rule files. Claude Code loads this to understand which rules apply.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">01-architecture.md</span></div><div class="fe-desc">Architecture rules: layer separation, service pattern, no circular dependencies.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">02-backend.md</span></div><div class="fe-desc">Backend coding rules: Flask conventions, route patterns, error handling.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">03-frontend.md</span></div><div class="fe-desc">Frontend rules: component patterns, state management, TypeScript strict mode.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">04-database.md</span></div><div class="fe-desc">Database rules: migration workflow, query patterns, no raw SQL.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">05-caching.md</span></div><div class="fe-desc">Caching rules: Redis key naming, TTL policies, cache invalidation patterns.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">06-rag.md</span></div><div class="fe-desc">RAG rules: embedding generation, Pinecone indexing, retrieval strategies.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">07-agents.md</span></div><div class="fe-desc">Agent rules: BaseAgent inheritance, tool definitions, prompt management.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">08-security.md</span></div><div class="fe-desc">Security rules: HIPAA compliance, data de-identification, encryption requirements.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">09-testing.md</span></div><div class="fe-desc">Testing rules: coverage targets, fixture patterns, test naming conventions.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">10-ops.md</span></div><div class="fe-desc">Operations rules: logging standards, monitoring, alerting, deployment practices.</div></div>
+        <div class="file-entry"><div class="fe-path"><span class="fp fp-docs">11-response-style.md through 14-observability.md</span></div><div class="fe-desc">Additional rules covering voice features, video integration, and observability instrumentation.</div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 9: GETTING STARTED ==================== -->
+<div class="section" id="getting-started">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">9</span> How to Get Started</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <h3>Step-by-Step for New Team Members</h3>
+      <ol class="steps">
+        <li><strong>Clone the repository</strong>
+          <pre><code>git clone https://github.com/euronone/Project-5-AI-Medical-Assistant-Patient-Monitoring-System.git
+cd Project-5-AI-Medical-Assistant-Patient-Monitoring-System</code></pre>
+        </li>
+        <li><strong>Read CONTRIBUTING.md</strong> &mdash; understand branch naming, commit format, and the rules before you write a single line of code.</li>
+        <li><strong>Install Docker Desktop</strong> &mdash; download from <code>docker.com</code>. This is the only prerequisite. Docker handles everything else.</li>
+        <li><strong>Start all services</strong>
+          <pre><code>docker-compose up --build</code></pre>
+          <p>This starts PostgreSQL, Redis, InfluxDB, Elasticsearch, MinIO, Flask backend, Celery worker, and Next.js frontend. First run takes 5-10 minutes to build.</p>
+        </li>
+        <li><strong>Verify everything is running</strong>
+          <ul>
+            <li>Frontend: <code>http://localhost:3000</code></li>
+            <li>Backend API: <code>http://localhost:5000</code></li>
+            <li>Swagger Docs: <code>http://localhost:5000/apidocs</code></li>
+            <li>MinIO Console: <code>http://localhost:9001</code></li>
+          </ul>
+        </li>
+        <li><strong>Find your assigned tasks</strong> &mdash; check the Team Structure section of this guide for your squad and modules. Coordinate with PK for specific task assignments.</li>
+        <li><strong>Create your branch</strong>
+          <pre><code>git checkout main
+git pull origin main
+git checkout -b feature/your-module/your-task-description</code></pre>
+        </li>
+        <li><strong>Implement, test, push</strong>
+          <pre><code><span class="cm"># Backend tests</span>
+cd backend && pytest tests/unit/
+
+<span class="cm"># Frontend tests</span>
+cd frontend && npm run test
+
+<span class="cm"># Push</span>
+git add -A
+git commit -m "feat(module): description of what you built"
+git push origin feature/your-module/your-task-description</code></pre>
+        </li>
+        <li><strong>Create PR, get review, merge</strong> &mdash; open a Pull Request targeting <code>main</code>. Add PK as reviewer. Wait for CI green + approval. Squash merge. Delete your branch.</li>
+      </ol>
+
+      <div class="info-box tip">
+        <div class="ib-title">Pro tip: Local development without Docker</div>
+        <p>If you only work on the frontend and don't need the full stack, you can run just the infrastructure services in Docker and run Next.js locally for faster hot-reload:</p>
+        <pre><code><span class="cm"># Start only databases</span>
+docker-compose up -d postgres redis influxdb elasticsearch minio
+
+<span class="cm"># Run frontend locally</span>
+cd frontend
+npm install
+cp .env.local.example .env.local
+npm run dev</code></pre>
+      </div>
+
+      <div class="info-box info">
+        <div class="ib-title">GitHub Repository</div>
+        <p>The project repository is at: <code>https://github.com/euronone/Project-5-AI-Medical-Assistant-Patient-Monitoring-System</code></p>
+        <p>Make sure you have accepted the collaborator invitation before trying to push code.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 10: PATTERNS ==================== -->
+<div class="section" id="patterns">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">10</span> Common Patterns &amp; Best Practices</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <h3>How to Add a New API Endpoint</h3>
+      <ol class="steps">
+        <li><strong>Define the route</strong> in <code>app/api/v1/your_module.py</code>. Use a Flask Blueprint. Keep it thin &mdash; parse input, call service, return response.</li>
+        <li><strong>Create/update the service</strong> in <code>app/services/your_service.py</code>. Put all business logic here. This is where validations, DB queries, and external calls happen.</li>
+        <li><strong>Create/update the model</strong> in <code>app/models/your_model.py</code> if you need a new database table or fields.</li>
+        <li><strong>Create a migration</strong> if the model changed: <code>flask db migrate -m "add xyz column"</code> then <code>flask db upgrade</code>.</li>
+        <li><strong>Register the blueprint</strong> in <code>app/api/__init__.py</code> if it's a new module.</li>
+        <li><strong>Write tests</strong>: unit test for the service, integration test for the endpoint.</li>
+        <li><strong>Update Swagger docs</strong> with docstrings in the route function (Flasgger reads them).</li>
+      </ol>
+
+      <pre><code><span class="cm"># Example: Adding a new endpoint</span>
+
+<span class="cm"># 1. Route (app/api/v1/medications.py)</span>
+<span class="kw">@</span>medications_bp.route(<span class="str">'/interaction-check'</span>, methods=[<span class="str">'POST'</span>])
+<span class="kw">@</span>jwt_required()
+<span class="kw">def</span> <span class="fn">check_interactions</span>():
+    <span class="str">"""Check drug interactions.
+    ---
+    tags: [Medications]
+    parameters:
+      - in: body
+        schema:
+          properties:
+            drug_ids:
+              type: array
+    responses:
+      200:
+        description: Interaction results
+    """</span>
+    data = request.get_json()
+    result = MedicationService.check_interactions(
+        drug_ids=data[<span class="str">'drug_ids'</span>],
+        patient_id=get_jwt_identity()
+    )
+    <span class="kw">return</span> jsonify(result), <span class="num">200</span>
+
+<span class="cm"># 2. Service (app/services/medication_service.py)</span>
+<span class="kw">class</span> <span class="ty">MedicationService</span>:
+    <span class="kw">@staticmethod</span>
+    <span class="kw">def</span> <span class="fn">check_interactions</span>(drug_ids, patient_id):
+        medications = Medication.query.filter(
+            Medication.id.in_(drug_ids)
+        ).all()
+        <span class="cm"># Call Drug Interaction Agent</span>
+        result = drug_interaction_agent.analyze(medications, patient_id)
+        <span class="kw">return</span> result</code></pre>
+
+      <h3>How to Add a New Database Model</h3>
+      <ol class="steps">
+        <li>Create a new file in <code>app/models/</code> following the naming convention (<code>snake_case.py</code>).</li>
+        <li>Define the class extending <code>db.Model</code>. Use UUID primary keys, add <code>created_at</code> and <code>updated_at</code> timestamps.</li>
+        <li>Import the model in <code>app/models/__init__.py</code> so Alembic can find it.</li>
+        <li>Generate migration: <code>flask db migrate -m "add your_table"</code></li>
+        <li>Review the generated migration in <code>migrations/versions/</code> &mdash; Alembic sometimes guesses wrong.</li>
+        <li>Apply: <code>flask db upgrade</code></li>
+      </ol>
+
+      <h3>How to Add a New Frontend Page</h3>
+      <ol class="steps">
+        <li>Create the page file in the correct route group: <code>src/app/(patient)/your-feature/page.tsx</code></li>
+        <li>Export a default React component. Use <code>'use client'</code> directive if it needs interactivity.</li>
+        <li>Create any needed components in <code>src/components/your-feature/</code>.</li>
+        <li>Use React Query (<code>useQuery</code>) for data fetching, Zod for response validation.</li>
+        <li>Use Tailwind CSS for styling. Follow existing page patterns.</li>
+        <li>Add a basic render test in <code>__tests__/pages/</code>.</li>
+      </ol>
+
+      <h3>How to Write a Test</h3>
+      <pre><code><span class="cm"># Backend unit test example</span>
+<span class="kw">import</span> pytest
+<span class="kw">from</span> app.services.medication_service <span class="kw">import</span> MedicationService
+
+<span class="kw">class</span> <span class="ty">TestMedicationService</span>:
+    <span class="kw">def</span> <span class="fn">test_check_interactions_finds_conflict</span>(self, app, db_session):
+        <span class="cm"># Arrange: create test medications using factories</span>
+        med1 = MedicationFactory(drug_name=<span class="str">"Warfarin"</span>)
+        med2 = MedicationFactory(drug_name=<span class="str">"Aspirin"</span>)
+
+        <span class="cm"># Act</span>
+        result = MedicationService.check_interactions(
+            drug_ids=[med1.id, med2.id],
+            patient_id=med1.patient_id
+        )
+
+        <span class="cm"># Assert</span>
+        <span class="kw">assert</span> result[<span class="str">'has_interactions'</span>] == <span class="kw">True</span>
+        <span class="kw">assert</span> result[<span class="str">'interactions'</span>][<span class="num">0</span>][<span class="str">'severity'</span>] == <span class="str">'severe'</span></code></pre>
+
+      <h3>How to Use AI Agents</h3>
+      <pre><code><span class="cm"># Call an agent from a service</span>
+<span class="kw">from</span> app.agents.orchestrator <span class="kw">import</span> Orchestrator
+
+<span class="kw">async def</span> <span class="fn">process_symptom_check</span>(message, patient_id):
+    orchestrator = Orchestrator()
+    result = <span class="kw">await</span> orchestrator.process(
+        intent=<span class="str">"symptom_check"</span>,
+        message=message,
+        context={<span class="str">"patient_id"</span>: patient_id}
+    )
+    <span class="kw">return</span> result</code></pre>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTION 11: GLOSSARY ==================== -->
+<div class="section" id="glossary">
+  <div class="section-header" onclick="toggleSection(this)">
+    <h2><span class="section-num">11</span> Glossary</h2>
+    <span class="chevron">&#9660;</span>
+  </div>
+  <div class="section-body">
+    <div class="section-content">
+
+      <div class="glossary-grid">
+        <div class="glossary-item"><dt>API</dt><dd>Application Programming Interface. A set of rules for how software components communicate. Our backend exposes a REST API that the frontend calls.</dd></div>
+        <div class="glossary-item"><dt>JWT</dt><dd>JSON Web Token. A compact, signed token containing user identity and permissions. Sent in every API request to prove who you are.</dd></div>
+        <div class="glossary-item"><dt>RBAC</dt><dd>Role-Based Access Control. Permissions are assigned to roles (patient, doctor, admin), not individual users. A doctor can see patient records; a patient cannot see other patients' records.</dd></div>
+        <div class="glossary-item"><dt>HIPAA</dt><dd>Health Insurance Portability and Accountability Act. US federal law requiring encryption, audit logging, and access controls for health data.</dd></div>
+        <div class="glossary-item"><dt>PHI</dt><dd>Protected Health Information. Any health data that can identify a patient: name, DOB, medical records, test results, etc.</dd></div>
+        <div class="glossary-item"><dt>ORM</dt><dd>Object Relational Mapper. Maps Python classes to database tables. SQLAlchemy is our ORM &mdash; write Python, it generates SQL.</dd></div>
+        <div class="glossary-item"><dt>REST</dt><dd>Representational State Transfer. API design pattern using HTTP methods: GET (read), POST (create), PUT (update), DELETE (remove).</dd></div>
+        <div class="glossary-item"><dt>WebSocket</dt><dd>Persistent bidirectional connection between client and server. Unlike HTTP (request-response), the server can push data anytime.</dd></div>
+        <div class="glossary-item"><dt>Docker</dt><dd>Platform for running applications in containers. A container packages the app + all dependencies into a portable, consistent unit.</dd></div>
+        <div class="glossary-item"><dt>K8s (Kubernetes)</dt><dd>Container orchestration platform. Manages scaling, self-healing, load balancing, and rolling updates for Docker containers in production.</dd></div>
+        <div class="glossary-item"><dt>CI/CD</dt><dd>Continuous Integration / Continuous Deployment. Automated testing on every push (CI) and automated deployment after merge (CD).</dd></div>
+        <div class="glossary-item"><dt>RAG</dt><dd>Retrieval Augmented Generation. Pattern where we retrieve relevant documents from a knowledge base and feed them to an LLM for grounded answers.</dd></div>
+        <div class="glossary-item"><dt>Vector DB</dt><dd>Database that stores and searches vector embeddings. Pinecone lets us find semantically similar medical knowledge using cosine similarity.</dd></div>
+        <div class="glossary-item"><dt>Embedding</dt><dd>A numerical representation (vector) of text that captures its meaning. Similar texts have similar embeddings, enabling semantic search.</dd></div>
+        <div class="glossary-item"><dt>Celery</dt><dd>Distributed task queue for Python. Accepts background jobs (report analysis, notifications) and processes them asynchronously.</dd></div>
+        <div class="glossary-item"><dt>Blueprint</dt><dd>Flask's way of organizing routes into modules. Each blueprint handles a section of the API (auth, patients, vitals, etc.).</dd></div>
+        <div class="glossary-item"><dt>Migration</dt><dd>Version-controlled database schema change. Managed by Alembic. Each migration has upgrade() and downgrade() functions.</dd></div>
+        <div class="glossary-item"><dt>SSR</dt><dd>Server-Side Rendering. The server generates HTML for each request. Faster initial load, better SEO. Next.js does this by default.</dd></div>
+        <div class="glossary-item"><dt>SSG</dt><dd>Static Site Generation. Pages are pre-built at build time. Fastest possible load, but content is static until rebuilt.</dd></div>
+        <div class="glossary-item"><dt>App Router</dt><dd>Next.js 14's routing system. File-based: a file at <code>app/dashboard/page.tsx</code> creates the route <code>/dashboard</code>.</dd></div>
+        <div class="glossary-item"><dt>ESI</dt><dd>Emergency Severity Index. 5-level triage system: 1 = immediate life-saving intervention, 5 = non-urgent. Our Triage Agent assigns these.</dd></div>
+        <div class="glossary-item"><dt>SOAP Notes</dt><dd>Clinical documentation format: Subjective (patient's complaint), Objective (exam findings), Assessment (diagnosis), Plan (treatment). Our Voice Agent generates these.</dd></div>
+        <div class="glossary-item"><dt>ICD-10</dt><dd>International Classification of Diseases, 10th Revision. Standardized codes for diagnoses. Example: J06.9 = "Acute upper respiratory infection."</dd></div>
+        <div class="glossary-item"><dt>LOINC</dt><dd>Logical Observation Identifiers Names and Codes. Standardized codes for lab tests. Example: 718-7 = "Hemoglobin [Mass/volume] in Blood."</dd></div>
+        <div class="glossary-item"><dt>NEWS2</dt><dd>National Early Warning Score 2. Scoring system that aggregates vitals into a single number predicting clinical deterioration risk.</dd></div>
+        <div class="glossary-item"><dt>MEWS</dt><dd>Modified Early Warning Score. Similar to NEWS2 but simpler. Both are calculated by our Monitoring Agent.</dd></div>
+        <div class="glossary-item"><dt>WebRTC</dt><dd>Web Real-Time Communication. Browser API for peer-to-peer video/audio calls. Daily.co handles the complexity for us.</dd></div>
+        <div class="glossary-item"><dt>MinIO</dt><dd>S3-compatible object storage that runs locally. We use it in development instead of AWS S3 for file storage.</dd></div>
+        <div class="glossary-item"><dt>Terraform</dt><dd>Infrastructure as Code tool. Defines cloud resources (servers, databases, networks) in .tf files. Reproducible, version-controlled infrastructure.</dd></div>
+        <div class="glossary-item"><dt>EKS</dt><dd>Elastic Kubernetes Service. AWS-managed Kubernetes. We don't manage the K8s control plane; AWS does.</dd></div>
+        <div class="glossary-item"><dt>Gunicorn</dt><dd>Production WSGI HTTP server for Python. Runs multiple Flask worker processes for concurrent request handling.</dd></div>
+        <div class="glossary-item"><dt>CORS</dt><dd>Cross-Origin Resource Sharing. Browser security policy. Our middleware allows the frontend (port 3000) to call the backend (port 5000).</dd></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center; padding:40px 0 20px; color:#94a3b8; font-size:0.85rem;">
+  <p>MedAssist AI Learning Guide &mdash; Version 1.1 &mdash; March 2026</p>
+  <p>Built for the MedAssist AI team. Questions? Reach out to PK.</p>
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+// Toggle section open/close
+function toggleSection(header) {
+  const section = header.parentElement;
+  section.classList.toggle('open');
+}
+
+// Toggle sidebar (mobile)
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.querySelector('.sidebar-overlay').classList.toggle('open');
+}
+
+// Close sidebar when clicking a link (mobile)
+document.querySelectorAll('.sidebar-nav a').forEach(function(link) {
+  link.addEventListener('click', function() {
+    if (window.innerWidth <= 900) {
+      document.getElementById('sidebar').classList.remove('open');
+      document.querySelector('.sidebar-overlay').classList.remove('open');
+    }
+  });
+});
+
+// Highlight active sidebar link on scroll
+var sections = document.querySelectorAll('.section[id], .hero[id]');
+var navLinks = document.querySelectorAll('.sidebar-nav a');
+
+function highlightNav() {
+  var scrollPos = window.scrollY + 100;
+  var current = '';
+  sections.forEach(function(section) {
+    if (section.offsetTop <= scrollPos) {
+      current = section.getAttribute('id');
+    }
+  });
+  navLinks.forEach(function(link) {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) {
+      link.classList.add('active');
+    }
+  });
+}
+window.addEventListener('scroll', highlightNav);
+highlightNav();
+
+// Open first section by default (already has .open class)
+// Open section if navigated via hash
+if (window.location.hash) {
+  var target = document.querySelector(window.location.hash);
+  if (target && target.classList.contains('section')) {
+    target.classList.add('open');
+  }
+}
+</script>
+
+</body>
+</html>

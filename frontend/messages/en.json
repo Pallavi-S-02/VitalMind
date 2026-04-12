@@ -1,0 +1,15 @@
+{
+  "Navigation": {
+    "dashboard": "Dashboard",
+    "appointments": "Appointments",
+    "patients": "Patients",
+    "messages": "Messages",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "Dashboard": {
+    "welcome": "Welcome back, {name}",
+    "upcomingAppointments": "Upcoming Appointments",
+    "recentActivity": "Recent Activity"
+  }
+}

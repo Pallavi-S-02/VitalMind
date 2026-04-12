@@ -1,0 +1,61 @@
+version: '3.8'
+
+# Production override file
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    # Remove exposed ports in production
+    ports: []
+    # Add production-specific configurations
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  redis:
+    ports: []
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+
+  influxdb:
+    ports: []
+
+  elasticsearch:
+    ports: []
+    environment:
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  minio:
+    ports: []
+    # Ensure secure connection in production
+    environment:
+      MINIO_SERVER_URL: https://s3.medassist.local
+      MINIO_BROWSER_REDIRECT_URL: https://console.s3.medassist.local
+
+  kibana:
+    ports: []
+    environment:
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USER:-elastic}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+
+  prometheus:
+    ports: []
+
+  grafana:
+    ports: []
+
+# Define a custom network for production to isolate backend services
+networks:
+  default:
+    driver: bridge
+    internal: true # Prevent external access by default
