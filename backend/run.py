@@ -7,7 +7,7 @@ from app.models import db
 from flask_migrate import Migrate
 import os
 
-app = create_app()
+app = create_app(os.getenv('FLASK_ENV', 'development'))
 migrate = Migrate(app, db)
 
 if __name__ == '__main__':
