@@ -2,7 +2,10 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authResponseSchema } from "@/lib/schemas/auth";
 
-const BACKEND_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1`;
+const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+// Node's server-side fetch requires an absolute URL. If we are using a relative proxy path, force the true backend URL.
+const serverSideUrl = rawUrl.startsWith('/') ? "https://vitalmind-backend.onrender.com" : rawUrl;
+const BACKEND_URL = `${serverSideUrl}/api/v1`;
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
