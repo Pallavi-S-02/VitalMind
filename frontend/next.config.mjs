@@ -12,6 +12,14 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/backend/:path*',
+        destination: 'https://vitalmind-backend.onrender.com/:path*',
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);
