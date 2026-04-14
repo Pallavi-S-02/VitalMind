@@ -56,6 +56,8 @@ interface AIDoctorState {
   startSession: (token: string, patientId: string) => Promise<void>;
   startRecording: () => Promise<void>;
   stopRecordingAndProcess: (token: string) => Promise<void>;
+  processVADAudio: (token: string, audioBlob: Blob) => Promise<void>; // VAD auto-submit
+  warmup: () => void;                                                  // pre-warm backend
   shareWithDoctor: (token: string, doctorId?: string) => Promise<void>;
   setLanguage: (lang: string) => void;
   endSession: () => void;
@@ -106,6 +108,24 @@ async function decodeToPCM16(b64: string): Promise<Uint8Array> {
   return new Uint8Array(pcm16.buffer);
 }
 
+/** Encode Float32Array PCM (from @ricky0123/vad-react) to a WAV Blob the backend accepts. */
+export function encodeToWAV(samples: Float32Array, sampleRate = 16000): Blob {
+  const buf = new ArrayBuffer(44 + samples.length * 2);
+  const v = new DataView(buf);
+  const w = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true);
+  w(8, "WAVE"); w(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, "data"); v.setUint32(40, samples.length * 2, true);
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Blob([buf], { type: "audio/wav" });
+}
+
 export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
   sessionId: null,
   isSessionActive: false,
@@ -145,9 +165,16 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
         error: null,
         sharedWithDoctor: false,
       });
+      // Pre-warm TTS & Gemini singletons on Render (fire-and-forget)
+      get().warmup();
     } catch (err: any) {
       set({ error: err.message || "Failed to start AI Doctor session" });
     }
+  },
+
+  warmup: () => {
+    // Fire-and-forget — no auth needed
+    fetch(`${API}/api/v1/voice/warmup`).catch(() => {});
   },
 
   startRecording: async () => {
@@ -366,6 +393,93 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
 
   setLanguage: (lang: string) => set({ language: lang }),
   clearError: () => set({ error: null }),
+
+  processVADAudio: async (token: string, audioBlob: Blob) => {
+    const { sessionId, language } = get();
+    if (!sessionId) return;
+    if (audioBlob.size < 512) return;
+
+    set({ isRecording: false, avatarState: "idle", isProcessing: true, localTranscript: "" });
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+
+    const patientTurn: AIDoctorTurn = { role: "patient", text: "(processing...)", timestamp: new Date().toISOString() };
+    const doctorTurn:  AIDoctorTurn = { role: "doctor",  text: "",               timestamp: new Date().toISOString() };
+    set((s) => ({ turns: [...s.turns, patientTurn, doctorTurn], isProcessing: true }));
+
+    const audioQueue: string[] = [];
+    let isPlayingQueue = false;
+    const playNextAudio = () => {
+      if (isPlayingQueue || audioQueue.length === 0) {
+        if (!isPlayingQueue && audioQueue.length === 0) set({ avatarState: "idle" });
+        return;
+      }
+      isPlayingQueue = true;
+      set({ avatarState: "speaking" });
+      const src = audioQueue.shift()!;
+      currentAudio = new Audio(src);
+      currentAudio.onended = () => { isPlayingQueue = false; playNextAudio(); };
+      currentAudio.onerror = () => { isPlayingQueue = false; playNextAudio(); };
+      currentAudio.play().catch(() => { isPlayingQueue = false; playNextAudio(); });
+    };
+
+    try {
+      const formData = new FormData();
+      formData.append("audio", audioBlob, `recording.${audioBlob.type.includes("wav") ? "wav" : "webm"}`);
+      formData.append("session_id", sessionId);
+      formData.append("language", language);
+      formData.append("format", audioBlob.type.includes("wav") ? "wav" : "webm");
+
+      const res = await fetch(`${API}/api/v1/voice/ai-doctor-stream`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Server error");
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let boundary = buffer.indexOf("\n\n");
+        while (boundary !== -1) {
+          const eventStr = buffer.slice(0, boundary);
+          buffer = buffer.slice(boundary + 2);
+          boundary = buffer.indexOf("\n\n");
+          if (eventStr.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(eventStr.slice(6));
+              if (data.type === "chunk") {
+                set((s) => {
+                  const t = [...s.turns];
+                  t[t.length - 1].text += (t[t.length - 1].text ? " " : "") + data.text;
+                  return { turns: t };
+                });
+                if (data.audio_b64) {
+                  audioQueue.push(`data:audio/mp3;base64,${data.audio_b64}`);
+                  playNextAudio();
+                }
+              } else if (data.type === "done") {
+                set((s) => {
+                  const t = [...s.turns];
+                  t[t.length - 2].text = data.transcript || "(audio)";
+                  return { turns: t, isProcessing: false, language: data.language || s.language,
+                           symptomSummary: data.symptom_summary || null,
+                           conversationPhase: (data.symptom_summary?.phase || "initial_intake") as ConversationPhase };
+                });
+              } else if (data.type === "error") {
+                set({ error: data.message, isProcessing: false });
+              }
+            } catch { /* malformed SSE */ }
+          }
+        }
+      }
+    } catch (err: any) {
+      set({ isProcessing: false, avatarState: "idle", error: err.message || "Processing failed" });
+    }
+  },
 
   endSession: () => {
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }

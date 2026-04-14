@@ -131,6 +131,38 @@ def ai_doctor_conversation():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# GET /api/v1/voice/warmup  (no auth — safe, returns no user data)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@voice_bp.route("/warmup", methods=["GET"])
+def warmup():
+    """
+    Pre-warm Gemini client and TTS singleton on Render's server.
+    Call this on page load so the first real voice request is cold-start-free.
+    No auth required — returns no patient data.
+    """
+    import os as _os
+    status = {"gemini": "cold", "tts": "cold"}
+
+    try:
+        from app.agents.voice_agent import _get_tts_client
+        tts = _get_tts_client()
+        status["tts"] = "warm" if tts else "unavailable"
+    except Exception:
+        status["tts"] = "unavailable"
+
+    try:
+        from google import genai as _genai
+        _genai.Client(api_key=_os.getenv("GOOGLE_API_KEY", ""))
+        status["gemini"] = "warm"
+    except Exception:
+        status["gemini"] = "unavailable"
+
+    logger.info("VoiceAPI: warmup called — %s", status)
+    return jsonify({"status": "warm", "components": status}), 200
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # POST /api/v1/voice/start-session
 # ─────────────────────────────────────────────────────────────────────────────
 

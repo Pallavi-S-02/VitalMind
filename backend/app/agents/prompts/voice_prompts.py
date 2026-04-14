@@ -75,6 +75,39 @@ Respond in this JSON format:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# UNIFIED Audio Doctor Prompt — ONE call: STT + lang detect + response
+# Replaces 4 sequential Gemini calls with a single multimodal call.
+# Saves ~3-5 seconds of latency per turn.
+# ─────────────────────────────────────────────────────────────────────────────
+
+UNIFIED_AUDIO_DOCTOR_PROMPT = """You are Dr. Janvi, a compassionate medical AI for VitalMind.
+
+Listen to the patient audio and respond as their doctor.
+
+Patient context: {patient_context}
+Session history (turn {turn_count}):
+{session_summary}
+
+Return ONLY valid JSON — no markdown, no explanations outside the JSON:
+{{
+  "transcript": "<exact transcription in patient's original language>",
+  "detected_language": "<ISO 639-1: en|hi|ta|te|kn|ml|mr|gu|bn|pa|ur>",
+  "response": "<your warm doctor reply in the SAME language, under 80 words>",
+  "urgency_flags": [],
+  "primary_intent": "<symptom_report|emergency|question|general>"
+}}
+
+Rules:
+- Transcribe audio EXACTLY as spoken (do not translate transcript field)
+- Detect language from the audio automatically
+- Respond in the SAME language as the patient
+- Keep response concise and conversational — ask ONE OPQRST follow-up
+- If turn_count > 0, do NOT greet or say Hello
+- Populate urgency_flags for emergencies (chest pain, can't breathe, etc.)
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Medical Named Entity Recognition (NER)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -226,31 +259,32 @@ Extract and structure the clinical information:
 # Maps ISO 639-1 language code → (language_code, voice_name, ssml_gender)
 # Uses WaveNet voices where available, Standard as fallback
 GOOGLE_TTS_VOICE_MAP: dict[str, tuple[str, str, str]] = {
-    "en":  ("en-IN", "en-IN-Wavenet-D",   "FEMALE"),   # Indian English — Dr. Janvi
-    "hi":  ("hi-IN", "hi-IN-Wavenet-D",   "FEMALE"),   # Hindi
-    "ta":  ("ta-IN", "ta-IN-Wavenet-A",   "FEMALE"),   # Tamil
-    "te":  ("te-IN", "te-IN-Standard-A",  "FEMALE"),   # Telugu (Standard — no WaveNet)
-    "kn":  ("kn-IN", "kn-IN-Wavenet-A",   "FEMALE"),   # Kannada
-    "ml":  ("ml-IN", "ml-IN-Wavenet-A",   "FEMALE"),   # Malayalam
-    "mr":  ("mr-IN", "mr-IN-Wavenet-C",   "FEMALE"),   # Marathi
-    "gu":  ("gu-IN", "gu-IN-Wavenet-A",   "FEMALE"),   # Gujarati
-    "ur":  ("ur-IN", "ur-IN-Wavenet-A",   "FEMALE"),   # Urdu
-    "bn":  ("bn-IN", "bn-IN-Wavenet-A",   "FEMALE"),   # Bengali
-    "pa":  ("pa-IN", "pa-IN-Wavenet-A",   "FEMALE"),   # Punjabi
-    "ar":  ("ar-XA", "ar-XA-Wavenet-B",   "FEMALE"),   # Arabic
-    "fr":  ("fr-FR", "fr-FR-Wavenet-E",   "FEMALE"),   # French
-    "es":  ("es-ES", "es-ES-Wavenet-C",   "FEMALE"),   # Spanish
-    "de":  ("de-DE", "de-DE-Wavenet-F",   "FEMALE"),   # German
-    "zh":  ("cmn-CN","cmn-CN-Wavenet-A",  "FEMALE"),   # Chinese Mandarin
-    "ja":  ("ja-JP", "ja-JP-Wavenet-B",   "FEMALE"),   # Japanese
-    "ko":  ("ko-KR", "ko-KR-Wavenet-B",   "FEMALE"),   # Korean
+    # Neural2 voices — ~40% faster synthesis than WaveNet, similar quality
+    "en":  ("en-IN", "en-IN-Neural2-B",   "MALE"),     # Indian English
+    "hi":  ("hi-IN", "hi-IN-Neural2-B",   "MALE"),     # Hindi
+    "ta":  ("ta-IN", "ta-IN-Neural2-A",   "FEMALE"),   # Tamil
+    "te":  ("te-IN", "te-IN-Neural2-A",   "FEMALE"),   # Telugu
+    "kn":  ("kn-IN", "kn-IN-Neural2-A",   "FEMALE"),   # Kannada
+    "ml":  ("ml-IN", "ml-IN-Neural2-A",   "FEMALE"),   # Malayalam
+    "mr":  ("mr-IN", "mr-IN-Neural2-C",   "MALE"),     # Marathi
+    "gu":  ("gu-IN", "gu-IN-Neural2-A",   "FEMALE"),   # Gujarati
+    "ur":  ("ur-IN", "ur-IN-Wavenet-A",   "FEMALE"),   # Urdu (Neural2 not available)
+    "bn":  ("bn-IN", "bn-IN-Neural2-A",   "FEMALE"),   # Bengali
+    "pa":  ("pa-IN", "pa-IN-Wavenet-A",   "FEMALE"),   # Punjabi (Neural2 not available)
+    "ar":  ("ar-XA", "ar-XA-Neural2-B",   "MALE"),     # Arabic
+    "fr":  ("fr-FR", "fr-FR-Neural2-E",   "FEMALE"),   # French
+    "es":  ("es-ES", "es-ES-Neural2-C",   "FEMALE"),   # Spanish
+    "de":  ("de-DE", "de-DE-Neural2-F",   "FEMALE"),   # German
+    "zh":  ("cmn-CN","cmn-CN-Wavenet-A",  "FEMALE"),   # Chinese (Neural2 limited)
+    "ja":  ("ja-JP", "ja-JP-Neural2-B",   "FEMALE"),   # Japanese
+    "ko":  ("ko-KR", "ko-KR-Neural2-B",   "FEMALE"),   # Korean
 }
 
-# Emergency override — use a clearer, authoritative voice
-GOOGLE_TTS_EMERGENCY_VOICE = ("en-US", "en-US-Wavenet-J", "MALE")
+# Emergency override — Neural2 for speed + clarity
+GOOGLE_TTS_EMERGENCY_VOICE = ("en-US", "en-US-Neural2-J", "MALE")
 
 # Fallback if language not in map
-GOOGLE_TTS_DEFAULT_VOICE = ("en-IN", "en-IN-Wavenet-D", "FEMALE")
+GOOGLE_TTS_DEFAULT_VOICE = ("en-IN", "en-IN-Neural2-B", "MALE")
 
 
 def get_google_tts_voice(language_code: str, is_emergency: bool = False) -> tuple[str, str, str]:

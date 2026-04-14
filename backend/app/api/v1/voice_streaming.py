@@ -33,9 +33,7 @@ from app.agents.voice_agent import (
 )
 from app.agents.prompts.voice_prompts import (
     AI_DOCTOR_SYSTEM_PROMPT,
-    VOICE_ROUTING_PROMPT,
-    GEMINI_AUDIO_TRANSCRIPTION_PROMPT,
-    LANGUAGE_DETECTION_PROMPT,
+    UNIFIED_AUDIO_DOCTOR_PROMPT,
     get_google_tts_voice,
     DEFAULT_TTS_SPEED,
 )
@@ -65,6 +63,31 @@ def _split_sentences(text: str) -> list[str]:
     if buf:
         sentences.append(buf)
     return sentences
+
+
+def _compact_history(history: list[dict], max_full_turns: int = 4) -> tuple[str, str]:
+    """
+    Rolling context window: keep last max_full_turns verbatim,
+    summarize older turns into a brief string (no extra LLM call).
+    Reduces token count by ~60% for long sessions.
+    """
+    if not history:
+        return "", ""
+    recent = history[-max_full_turns:] if len(history) > max_full_turns else history
+    older  = history[:-max_full_turns] if len(history) > max_full_turns else []
+
+    recent_text = "\n".join(
+        f"{m.get('role','?').upper()}: {(m.get('transcript') or '')[:120]}"
+        for m in recent
+    )
+    if not older:
+        return "", recent_text
+
+    older_parts = [
+        f"{'Patient' if t.get('role') == 'patient' else 'Doctor'}: {(t.get('transcript') or '')[:70]}"
+        for t in older if (t.get('transcript') or '').strip()
+    ]
+    return "; ".join(older_parts[:6]), recent_text
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -127,142 +150,164 @@ def _generate_stream(
     language_hint: Optional[str],
     patient_context: dict,
 ) -> Generator[str, None, None]:
-    """Core SSE generator: transcribe → detect lang → stream LLM → per-sentence TTS."""
-    from langchain_core.messages import HumanMessage, SystemMessage
-    from langchain_google_genai import ChatGoogleGenerativeAI
+    """
+    Optimised SSE generator — latency target: ~1.5s to first audio chunk.
+
+    Key changes:
+    1. ONE unified Gemini Flash call: STT + language detect + doctor response
+    2. Always gemini-3-flash-preview (no Pro thinking delay)
+    3. Rolling context window (last 4 turns full, older summarised)
+    4. Per-sentence TTS with look-ahead pre-fetching via ThreadPoolExecutor
+    """
+    import re as _re
+    from concurrent.futures import ThreadPoolExecutor
     from google import genai as google_genai
     from google.genai import types as genai_types
 
-    # ── Step 1: Transcribe audio (Flash, non-streaming) ──────────────────────
-    mime_map = {"webm": "audio/webm", "mp4": "audio/mp4", "wav": "audio/wav",
-                "ogg": "audio/ogg", "mp3": "audio/mpeg", "m4a": "audio/mp4"}
+    mime_map = {
+        "webm": "audio/webm", "mp4": "audio/mp4", "wav": "audio/wav",
+        "ogg":  "audio/ogg",  "mp3": "audio/mpeg", "m4a": "audio/mp4", "flac": "audio/flac",
+    }
     mime_type = mime_map.get(audio_format.lower(), f"audio/{audio_format}")
-    transcript = ""
-    try:
-        client = google_genai.Client(api_key=_GOOGLE_KEY)
-        audio_part = genai_types.Part.from_bytes(data=audio_data, mime_type=mime_type)
-        tr = client.models.generate_content(
-            model=_GEMINI_FLASH,
-            contents=[GEMINI_AUDIO_TRANSCRIPTION_PROMPT, audio_part],
-            config=genai_types.GenerateContentConfig(
-                system_instruction=AI_DOCTOR_SYSTEM_PROMPT,
-                temperature=0, max_output_tokens=512,
-            ),
-        )
-        transcript = (tr.text or "").strip()
-    except Exception as exc:
-        logger.error("StreamVoice: transcription failed: %s", exc)
-        yield _sse({"type": "error", "message": "Transcription failed. Please try again."})
-        return
 
-    if not transcript:
-        yield _sse({"type": "error", "message": "Could not hear audio. Please speak clearly and try again."})
-        return
-
-    # ── Step 2: Language detection (Flash) ───────────────────────────────────
-    detected_language = language_hint or "en"
-    try:
-        if not language_hint or len(transcript) >= 30:
-            llm = ChatGoogleGenerativeAI(model=_GEMINI_FLASH, temperature=0, google_api_key=_GOOGLE_KEY)
-            lang_resp = llm.invoke([
-                SystemMessage(content="You are a language detection assistant. Respond with JSON only."),
-                HumanMessage(content=LANGUAGE_DETECTION_PROMPT.format(transcript=transcript[:500])),
-            ])
-            lang_result = json.loads(_extract_text(lang_resp))
-            detected_language = lang_result.get("primary_language", "en")
-    except Exception as exc:
-        logger.warning("StreamVoice: lang detect failed: %s — using 'en'", exc)
-
-    lang_code, voice_name, ssml_gender = get_google_tts_voice(detected_language, is_emergency=False)
-
-    # ── Step 3: Load session from Redis ──────────────────────────────────────
+    # ── 1. Load session from Redis (needed for context in unified call) ──────────────
     session_history: list[dict] = []
-    session_summary = ""
     turn_count = 0
+    redis_client = None
     try:
         import redis as _redis
-        r = _redis.Redis(
+        redis_client = _redis.Redis(
             host=os.getenv("REDIS_HOST", "localhost"),
             port=int(os.getenv("REDIS_PORT", 6379)),
             db=int(os.getenv("REDIS_DB", 0)),
             decode_responses=True,
             socket_connect_timeout=0.3,
         )
-        raw = r.get(f"vitalmind:voice:{session_id}")
+        raw = redis_client.get(f"vitalmind:voice:{session_id}")
         if raw:
-            saved = json.loads(raw)
-            session_history = saved.get("history", [])
-            session_summary = saved.get("summary", "")
+            session_history = json.loads(raw).get("history", [])
         turn_count = len(session_history)
     except Exception:
         pass
 
-    # ── Step 4: Stream Gemini response sentence by sentence ───────────────────
-    model = _GEMINI_MODEL if turn_count >= 4 else _GEMINI_FLASH
-    
-    prompt_transcript = transcript
-    if turn_count > 0:
-        if "name" in patient_context:
-            del patient_context["name"]
-        prompt_transcript = f"[SYSTEM: This is turn {turn_count}. DO NOT say Hello/Namaste. DO NOT use the patient's name. Go straight to the medical response. CRITICAL: YOU MUST RESPOND IN THE {detected_language} LANGUAGE.]\n\n{transcript}"
-
-    recent_history_text = "\n".join([f"{m['role'].upper()}: {m['transcript']}" for m in session_history[-6:]])
-
-    prompt = VOICE_ROUTING_PROMPT.format(
-        transcript=prompt_transcript,
-        entities="[]",
-        intent="symptom_report",
-        patient_context=json.dumps(patient_context)[:400],
-        session_summary=recent_history_text,
-        urgency_flags="[]",
-        language=detected_language,
+    # ── 2. Rolling context window ─────────────────────────────────────────────────
+    older_summary, recent_text = _compact_history(session_history, max_full_turns=4)
+    session_context = (
+        f"[Earlier (summarized): {older_summary}]\n\n{recent_text}" if older_summary else recent_text
     )
+    # Drop patient name after first turn to prevent repetitive greetings
+    ctx_for_prompt = {k: v for k, v in patient_context.items() if k != "name" or turn_count == 0}
 
-    llm_stream_client = google_genai.Client(api_key=_GOOGLE_KEY)
+    # ── 3. ONE unified Gemini Flash call ────────────────────────────────────────────
+    # Replaces: _transcribe_audio + _detect_language + _extract_medical_entities + _process_voice_command
+    # from voice_agent.py (4 separate API calls → 1 call, saves ~3-5 seconds)
+    gai_client  = google_genai.Client(api_key=_GOOGLE_KEY)
+    audio_part  = genai_types.Part.from_bytes(data=audio_data, mime_type=mime_type)
+
+    transcript         = ""
+    detected_language  = language_hint or "en"
     full_response_text = ""
-    sentence_buffer = ""
-    chunk_index = 0
-    full_json_text = ""
+    urgency_flags: list[str] = []
+    primary_intent = "symptom_report"
 
     try:
-        response_stream = llm_stream_client.models.generate_content_stream(
-            model=model,
-            contents=[prompt],
-            config=genai_types.GenerateContentConfig(
-                system_instruction=AI_DOCTOR_SYSTEM_PROMPT,
-                temperature=0.3,
-            )
+        unified_prompt = UNIFIED_AUDIO_DOCTOR_PROMPT.format(
+            patient_context=json.dumps(ctx_for_prompt)[:300],
+            session_summary=session_context[:600],
+            turn_count=turn_count,
         )
-        
-        for chunk in response_stream:
-            if chunk.text:
-                full_json_text += chunk.text
+        stt_resp = gai_client.models.generate_content(
+            model=_GEMINI_FLASH,   # Always Flash — no Pro/thinking overhead
+            contents=[unified_prompt, audio_part],
+            config=genai_types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=600,
+            ),
+        )
+        raw_text = (stt_resp.text or "").strip()
+        # Strip markdown fences Gemini sometimes adds
+        raw_text = _re.sub(r'^```(?:json)?\s*\n?', '', raw_text, flags=_re.IGNORECASE)
+        raw_text = _re.sub(r'\n?```\s*$', '', raw_text.strip())
 
-        # Parse the complete JSON response
-        clean = _extract_text(type("R", (), {"content": full_json_text})())
-        result = json.loads(clean)
-        full_response_text = result.get("spoken_response", "")
-
-        if not full_response_text:
-            full_response_text = "I heard you. Could you tell me more about what you're experiencing?"
-
-        # ── Step 5: Send the entire response as a single TTS chunk to avoid speech gaps ─
-        audio_b64 = _tts_sentence(full_response_text, lang_code, voice_name, ssml_gender)
-        yield _sse({
-            "type": "chunk",
-            "chunk_index": 0,
-            "text": full_response_text,
-            "audio_b64": audio_b64,
-            "language": detected_language,
-        })
-        chunk_index = 1
+        parsed             = json.loads(raw_text)
+        transcript         = parsed.get("transcript", "").strip()
+        detected_language  = parsed.get("detected_language", language_hint or "en")
+        full_response_text = parsed.get("response", "").strip()
+        urgency_flags      = parsed.get("urgency_flags", [])
+        primary_intent     = parsed.get("primary_intent", "symptom_report")
 
     except Exception as exc:
-        logger.error("StreamVoice: LLM/TTS stream failed: %s", exc)
-        yield _sse({"type": "error", "message": "Processing failed. Please try again."})
+        logger.error("StreamVoice: unified Gemini call failed: %s", exc)
+        yield _sse({"type": "error", "message": "Voice processing failed. Please try again."})
         return
 
-    # ── Step 6: Send final metadata event ────────────────────────────────────
+    if not transcript:
+        yield _sse({"type": "error", "message": "Could not hear audio clearly. Please try again."})
+        return
+
+    lang_code, voice_name, ssml_gender = get_google_tts_voice(
+        detected_language, is_emergency=bool(urgency_flags)
+    )
+
+    # ── 4. Emergency fast path ──────────────────────────────────────────────────
+    if urgency_flags:
+        em_text = (
+            "This sounds like a medical emergency. "
+            "Please call emergency services immediately. I am alerting medical staff."
+        )
+        em_lc, em_voice, em_gender = get_google_tts_voice("en", is_emergency=True)
+        audio_b64 = _tts_sentence(em_text, em_lc, em_voice, em_gender)
+        yield _sse({"type": "chunk", "chunk_index": 0, "text": em_text,
+                    "audio_b64": audio_b64, "language": "en"})
+        yield _sse({"type": "done", "transcript": transcript, "spoken_response": em_text,
+                    "language": "en", "is_emergency": True,
+                    "symptom_summary": {"urgency": "emergency", "symptoms": [],
+                                        "differential": None, "recommended_tests": [],
+                                        "phase": "triage", "turn": turn_count + 1},
+                    "session_id": session_id, "chunk_count": 1})
+        return
+
+    if not full_response_text:
+        full_response_text = "I heard you. Could you tell me more about what you're experiencing?"
+
+    # ── 5. Per-sentence TTS with look-ahead pre-fetching ─────────────────────────
+    # While the frontend plays sentence[0], sentence[1] is already being synthesised.
+    sentences = _split_sentences(full_response_text) or [full_response_text]
+    chunk_index = 0
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        tts_futures: dict = {}
+        # Pre-submit TTS for first 2 sentences immediately
+        for i in range(min(2, len(sentences))):
+            tts_futures[i] = executor.submit(
+                _tts_sentence, sentences[i], lang_code, voice_name, ssml_gender
+            )
+
+        for i, sentence in enumerate(sentences):
+            if not sentence.strip():
+                continue
+            # Pre-fetch sentence i+2 while we wait for i
+            nxt = i + 2
+            if nxt < len(sentences) and nxt not in tts_futures:
+                tts_futures[nxt] = executor.submit(
+                    _tts_sentence, sentences[nxt], lang_code, voice_name, ssml_gender
+                )
+            if i not in tts_futures:
+                tts_futures[i] = executor.submit(
+                    _tts_sentence, sentences[i], lang_code, voice_name, ssml_gender
+                )
+            audio_b64 = tts_futures[i].result()
+            yield _sse({
+                "type": "chunk",
+                "chunk_index": chunk_index,
+                "text": sentence,
+                "audio_b64": audio_b64,
+                "language": detected_language,
+            })
+            chunk_index += 1
+
+    # ── 6. Final metadata event ──────────────────────────────────────────────────
+    phase = "initial_intake" if turn_count == 0 else "followup_interview"
     yield _sse({
         "type": "done",
         "transcript": transcript,
@@ -270,33 +315,36 @@ def _generate_stream(
         "language": detected_language,
         "is_emergency": False,
         "symptom_summary": {
-            "symptoms": [],
-            "urgency": "routine",
-            "differential": None,
-            "recommended_tests": [],
-            "phase": "initial_intake",
-            "turn": turn_count + 1,
+            "symptoms": [], "urgency": "routine", "differential": None,
+            "recommended_tests": [], "phase": phase, "turn": turn_count + 1,
         },
         "session_id": session_id,
         "chunk_count": chunk_index,
     })
 
-    # ── Step 7: Persist turn to Redis (async, non-blocking) ──────────────────
+    # ── 7. Persist turn to Redis async (fire-and-forget) ────────────────────────
     try:
         import threading
+        _hist_snapshot = list(session_history)
+        _transcript    = transcript
+        _response      = full_response_text
+        _ctx           = session_context
+
         def _save():
             try:
                 import redis as _r2
-                rc = _r2.Redis(host=os.getenv("REDIS_HOST","localhost"),
-                               port=int(os.getenv("REDIS_PORT",6379)),
-                               db=int(os.getenv("REDIS_DB",0)),
-                               decode_responses=True)
-                session_history.append({"role": "patient", "transcript": transcript,
-                                        "timestamp": __import__("datetime").datetime.utcnow().isoformat()})
-                session_history.append({"role": "assistant", "transcript": full_response_text,
-                                        "timestamp": __import__("datetime").datetime.utcnow().isoformat()})
+                rc = _r2.Redis(
+                    host=os.getenv("REDIS_HOST", "localhost"),
+                    port=int(os.getenv("REDIS_PORT", 6379)),
+                    db=int(os.getenv("REDIS_DB", 0)),
+                    decode_responses=True,
+                )
+                updated = _hist_snapshot[-8:]   # hard cap at 8 turns
+                ts = __import__("datetime").datetime.utcnow().isoformat()
+                updated.append({"role": "patient",    "transcript": _transcript, "timestamp": ts})
+                updated.append({"role": "assistant",  "transcript": _response,   "timestamp": ts})
                 rc.setex(f"vitalmind:voice:{session_id}", 1800, json.dumps({
-                    "history": session_history[-8:], "summary": session_summary,
+                    "history": updated, "summary": _ctx,
                     "session_id": session_id, "patient_id": patient_id,
                 }))
             except Exception:
@@ -304,6 +352,7 @@ def _generate_stream(
         threading.Thread(target=_save, daemon=True).start()
     except Exception:
         pass
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -4,13 +4,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import {
-  Mic, Square, Phone, ChevronLeft, Globe2, 
-  CheckCircle2, AlertCircle, Loader2, MessageCircle, 
-  Stethoscope, Activity, Radio, Volume2
+  Mic, Square, Phone, ChevronLeft, Globe2,
+  CheckCircle2, AlertCircle, Loader2, MessageCircle,
+  Stethoscope, Activity, Radio, Volume2, Zap,
 } from "lucide-react";
 import DoctorAvatar from "@/components/voice/DoctorAvatar";
 import SymptomSummaryPanel from "@/components/voice/SymptomSummaryPanel";
-import { useAIDoctorStore } from "@/store/aiDoctorStore";
+import { useAIDoctorStore, encodeToWAV } from "@/store/aiDoctorStore";
+import { useMicVAD } from "@ricky0123/vad-react";
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
@@ -31,11 +32,42 @@ export default function AIDoctorPage() {
     sessionId, isSessionActive, language, isRecording, isProcessing,
     avatarState, turns, localTranscript, conversationPhase,
     symptomSummary, isSharingWithDoctor, sharedWithDoctor, error,
-    startSession, startRecording, stopRecordingAndProcess,
+    startSession, startRecording, stopRecordingAndProcess, processVADAudio,
     shareWithDoctor, setLanguage, endSession, clearError,
   } = useAIDoctorStore();
 
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [vadReady, setVadReady]         = useState(false);
+
+  // ── VAD: auto-stop when user goes silent for ~800ms ──────────────────────
+  const vad = useMicVAD({
+    startOnLoad:     false,
+    model:           "v5" as const,
+    baseAssetPath:   "/",           // serves vad.worklet.bundle.min.js + silero_vad_v5.onnx from public/
+    onnxWASMBasePath: "/",          // serves ort-wasm-simd-threaded.wasm etc from public/
+    preSpeechPadMs:  150,
+    redemptionMs:    800,           // 800ms silence → onSpeechEnd
+    onSpeechStart: () => {
+      useAIDoctorStore.setState({ isRecording: true, avatarState: "listening", localTranscript: "", error: null });
+    },
+    onSpeechEnd: async (audio: Float32Array) => {
+      if (!session?.accessToken || !sessionId) return;
+      const wavBlob = encodeToWAV(audio, 16000);
+      await processVADAudio(session.accessToken, wavBlob);
+    },
+    onVADMisfire: () => {
+      useAIDoctorStore.setState({ isRecording: false, avatarState: "idle" });
+    },
+  });
+
+  // Mark VAD ready once loaded
+  useEffect(() => { if (!vad.loading && !vad.errored) setVadReady(true); }, [vad.loading, vad.errored]);
+
+  // Start VAD when session becomes active
+  useEffect(() => {
+    if (isSessionActive && vadReady && !vad.listening) vad.start();
+    if (!isSessionActive && vad.listening)             vad.pause();
+  }, [isSessionActive, vadReady]);
 
   // Start session on mount
   useEffect(() => {
@@ -52,8 +84,10 @@ export default function AIDoctorPage() {
     }
   }, [turns, localTranscript]);
 
+  // Manual fallback: button click when VAD unavailable
   const handleMicPress = async () => {
     if (!session?.accessToken) return;
+    if (vadReady) return;  // VAD handles it automatically — button is disabled
     if (isRecording) {
       await stopRecordingAndProcess(session.accessToken);
     } else {
@@ -62,12 +96,11 @@ export default function AIDoctorPage() {
   };
 
   const handleShareWithDoctor = async () => {
-    if (session?.accessToken) {
-      await shareWithDoctor(session.accessToken);
-    }
+    if (session?.accessToken) await shareWithDoctor(session.accessToken);
   };
 
   const currentLang = LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
+
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] bg-[#040814] rounded-3xl overflow-hidden relative shadow-2xl border border-white/5 ring-1 ring-white/10 font-sans">
@@ -215,40 +248,52 @@ export default function AIDoctorPage() {
               </div>
             )}
 
-            {/* Hold to Speak Button (Highly stylized) */}
+            {/* ── Mic Button ── */}
             <button
               onClick={handleMicPress}
-              disabled={isProcessing || !isSessionActive}
+              disabled={isProcessing || !isSessionActive || vadReady}
               className={`relative w-full group overflow-hidden rounded-[2rem] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]
                 ${isRecording
                   ? "bg-red-600 shadow-[0_0_40px_rgba(220,38,38,0.6)] ring-2 ring-red-400 ring-offset-2 ring-offset-[#040814]"
-                  : "bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.5)] ring-1 ring-white/10 shadow-inner-[inset_0_2px_0_rgba(255,255,255,0.2)]"
+                  : "bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.5)] ring-1 ring-white/10"
                 }`}
             >
               <div className="relative z-10 flex items-center justify-center gap-3 py-5 text-white font-black tracking-wide">
                 {isProcessing ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> ANALYZING INPUT</>
                 ) : isRecording ? (
-                  <><Square className="w-5 h-5 fill-current" /> RECORDING (TAP TO STOP)</>
+                  <><Square className="w-5 h-5 fill-current" /> LISTENING…</>
+                ) : vadReady ? (
+                  <><Zap className="w-5 h-5 text-emerald-300" /> SPEAK FREELY — AUTO DETECT</>
                 ) : (
-                  <><Mic className="w-6 h-6 group-hover:scale-110 transition-transform" /> HOLD TO SPEAK</>
+                  <><Mic className="w-6 h-6 group-hover:scale-110 transition-transform" /> TAP TO SPEAK</>
                 )}
               </div>
-              
-              {/* Glass glare effect inside button */}
+              {/* Glass glare */}
               <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-50 z-20" />
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-0" />
-              
-              {/* Audio waves when recording */}
               {isRecording && (
-                 <div className="absolute inset-0 flex items-center gap-[2px] opacity-20 justify-center z-0 w-full overflow-hidden">
-                   {[...Array(40)].map((_, i) => (
-                     <div key={i} className="w-[3px] bg-white rounded-full animate-pulse" 
-                        style={{ height: `${Math.random() * 100}%`, animationDuration: `${Math.random() * 0.5 + 0.3}s` }} />
-                   ))}
-                 </div>
+                <div className="absolute inset-0 flex items-center gap-[2px] opacity-20 justify-center z-0 w-full overflow-hidden">
+                  {[...Array(40)].map((_, i) => (
+                    <div key={i} className="w-[3px] bg-white rounded-full animate-pulse"
+                      style={{ height: `${Math.random() * 100}%`, animationDuration: `${Math.random() * 0.5 + 0.3}s` }} />
+                  ))}
+                </div>
               )}
             </button>
+
+            {/* VAD status badge */}
+            <div className={`flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors ${
+              vadReady ? "text-emerald-400" : vad.loading ? "text-amber-400" : "text-slate-500"
+            }`}>
+              {vadReady ? (
+                <><Zap className="w-3 h-3" /> Auto Voice Detect Active — just speak</>
+              ) : vad.loading ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> Loading VAD model…</>
+              ) : (
+                <><Mic className="w-3 h-3" /> Manual mode</>  
+              )}
+            </div>
 
             <button
               onClick={() => { endSession(); router.push("/patient/dashboard"); }}
