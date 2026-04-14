@@ -57,7 +57,20 @@ export default function PatientMedicationsPage() {
   
   // Data States
   const [medications, setMedications] = useState<Prescription[]>([]);
-  const [catalog, setCatalog] = useState<MedicationCatalogItem[]>([]);
+  const [catalog, setCatalog] = useState<MedicationCatalogItem[]>([
+    { id: "med-1", name: "Amoxicillin", description: "Antibiotic" },
+    { id: "med-2", name: "Lisinopril", description: "Blood pressure" },
+    { id: "med-3", name: "Metformin", description: "Diabetes" },
+    { id: "med-4", name: "Amlodipine", description: "Blood pressure" },
+    { id: "med-5", name: "Metoprolol", description: "Beta blocker" },
+    { id: "med-6", name: "Omeprazole", description: "Proton pump inhibitor" },
+    { id: "med-7", name: "Losartan", description: "Blood pressure" },
+    { id: "med-8", name: "Atorvastatin", description: "Cholesterol" },
+    { id: "med-9", name: "Levothyroxine", description: "Thyroid" },
+    { id: "med-10", name: "Albuterol", description: "Inhaler" },
+    { id: "med-11", name: "Gabapentin", description: "Nerve pain" },
+    { id: "med-12", name: "Aspirin", description: "Pain relief/Blood thinner" },
+  ]);
   
   // UI Loading States
   const [loading, setLoading] = useState(true);
