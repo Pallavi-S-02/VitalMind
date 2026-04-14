@@ -121,7 +121,19 @@ export default function PatientMedicationsPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setCatalog(data);
+        if (data && data.length > 0) {
+          // If the backend actually has drugs, combine them with our hardcoded list
+          // ensuring no duplicates by ID
+          setCatalog(prev => {
+            const newCatalog = [...prev];
+            data.forEach((d: MedicationCatalogItem) => {
+              if (!newCatalog.find(c => c.id === d.id)) {
+                newCatalog.push(d);
+              }
+            });
+            return newCatalog;
+          });
+        }
       }
     } catch (err) {
       console.error("Failed to load catalog", err);
