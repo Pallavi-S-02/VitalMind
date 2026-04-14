@@ -42,7 +42,8 @@ export default function DoctorPatientsPage() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to fetch patients");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(`HTTP ${res.status}: ${errData.message || "Failed to fetch patients"}`);
       }
 
       const data = await res.json();
