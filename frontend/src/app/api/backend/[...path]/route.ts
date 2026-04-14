@@ -1,26 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 
 const RENDER_BACKEND = 'https://vitalmind-backend.onrender.com';
-
-// Headers to skip when forwarding (host must be set to backend's host, not Vercel's)
-const SKIP_HEADERS = new Set(['host', 'connection', 'transfer-encoding', 'content-length']);
+const SKIP_HEADERS = new Set(['host', 'connection', 'transfer-encoding', 'content-length', 'cookie']);
 
 async function handler(req: NextRequest, { params }: { params: { path: string[] } }) {
+  // ✅ Get the JWT token server-side from the NextAuth session
+  // This is reliable because the browser always sends cookies (same-origin),
+  // so auth() correctly identifies who is making the request.
+  const session = await auth();
+
   const path = (params.path || []).join('/');
   const targetUrl = `${RENDER_BACKEND}/${path}${req.nextUrl.search}`;
 
-  // Forward ALL headers except ones that would break the proxy
-  const forwardHeaders: Record<string, string> = {};
+  // Build outgoing headers, skipping ones that would break the proxy
+  const forwardHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
   req.headers.forEach((value, key) => {
     if (!SKIP_HEADERS.has(key.toLowerCase())) {
       forwardHeaders[key] = value;
     }
   });
 
-  // Ensure Authorization is explicitly set (belt and suspenders)
-  const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
-  if (authHeader) {
-    forwardHeaders['Authorization'] = authHeader;
+  // Always inject the backend JWT from the server session
+  const accessToken = (session as any)?.accessToken;
+  if (accessToken) {
+    forwardHeaders['Authorization'] = `Bearer ${accessToken}`;
   }
 
   const body = ['GET', 'HEAD'].includes(req.method) ? undefined : await req.text();
@@ -38,11 +45,10 @@ async function handler(req: NextRequest, { params }: { params: { path: string[] 
       status: response.status,
       headers: {
         'Content-Type': response.headers.get('Content-Type') || 'application/json',
-        'Access-Control-Allow-Origin': '*',
       },
     });
   } catch (err) {
-    console.error('[proxy] Error forwarding request to backend:', err);
+    console.error('[proxy] Error forwarding to backend:', err);
     return NextResponse.json({ message: 'Proxy error: could not reach backend' }, { status: 502 });
   }
 }
