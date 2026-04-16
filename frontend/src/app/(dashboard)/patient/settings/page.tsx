@@ -59,7 +59,7 @@ function TagInput({ label, placeholder, tags, setTags, icon: Icon }: TagInputPro
 
   return (
     <div className="space-y-3">
-      <Label>{label}</Label>
+      <Label className="text-gray-200 font-semibold text-sm">/ {label}</Label>
       <div className="flex flex-wrap gap-2 mb-2 min-h-[32px]">
         {tags.map((tag) => (
           <Badge key={tag} variant="secondary" className="px-3 py-1 gap-2 bg-violet-500/10 text-violet-400 border-violet-500/20">
@@ -69,7 +69,7 @@ function TagInput({ label, placeholder, tags, setTags, icon: Icon }: TagInputPro
             </button>
           </Badge>
         ))}
-        {tags.length === 0 && <span className="text-xs text-gray-500 italic">No items added yet.</span>}
+        {tags.length === 0 && <span className="text-xs text-gray-600 italic">No items added yet.</span>}
       </div>
       <div className="relative">
         <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -84,7 +84,7 @@ function TagInput({ label, placeholder, tags, setTags, icon: Icon }: TagInputPro
               addTag();
             }
           }}
-          className="pl-10 pr-12"
+          className="pl-10 pr-12 bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600"
         />
         <Button
           type="button"
@@ -291,35 +291,47 @@ export default function PatientSettingsPage() {
         <aside className="w-full md:w-64 flex flex-col gap-2">
           <Button
             variant={activeTab === "account" ? "default" : "ghost"}
-            className="justify-start gap-3 h-12 px-4 shadow-sm"
+            className={`justify-start gap-3 h-12 px-4 transition-all ${
+              activeTab === "account" 
+                ? "bg-white text-gray-900 shadow-xl" 
+                : "text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
             onClick={() => setActiveTab("account")}
           >
-            <User className="h-4 w-4" />
+            <User className={`h-4 w-4 ${activeTab === "account" ? "text-gray-900" : "text-gray-500"}`} />
             Account Information
           </Button>
           <Button
             variant={activeTab === "health" ? "default" : "ghost"}
-            className="justify-start gap-3 h-12 px-4 shadow-sm"
+            className={`justify-start gap-3 h-12 px-4 transition-all ${
+              activeTab === "health" 
+                ? "bg-white text-gray-900 shadow-xl" 
+                : "text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
             onClick={() => setActiveTab("health")}
           >
-            <Shield className="h-4 w-4" />
+            <Shield className={`h-4 w-4 ${activeTab === "health" ? "text-gray-900" : "text-gray-500"}`} />
             Health Profile
           </Button>
           <Button
             variant={activeTab === "emergency" ? "default" : "ghost"}
-            className="justify-start gap-3 h-12 px-4 shadow-sm"
+            className={`justify-start gap-3 h-12 px-4 transition-all ${
+              activeTab === "emergency" 
+                ? "bg-white text-gray-900 shadow-xl" 
+                : "text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
             onClick={() => setActiveTab("emergency")}
           >
-            <Heart className="h-4 w-4" />
+            <Heart className={`h-4 w-4 ${activeTab === "emergency" ? "text-gray-900" : "text-gray-500"}`} />
             Emergency Contact
           </Button>
           <Separator className="my-4" />
-          <Button variant="ghost" className="justify-start gap-3 h-12 px-4 text-muted-foreground" disabled>
-            <Bell className="h-4 w-4" />
+          <Button variant="ghost" className="justify-start gap-3 h-12 px-4 text-gray-600 cursor-not-allowed" disabled>
+            <Bell className="h-4 w-4 text-gray-700" />
             Notifications (Soon)
           </Button>
-          <Button variant="ghost" className="justify-start gap-3 h-12 px-4 text-muted-foreground" disabled>
-            <Lock className="h-4 w-4" />
+          <Button variant="ghost" className="justify-start gap-3 h-12 px-4 text-gray-600 cursor-not-allowed" disabled>
+            <Lock className="h-4 w-4 text-gray-700" />
             Privacy & Security (Soon)
           </Button>
         </aside>
@@ -337,7 +349,7 @@ export default function PatientSettingsPage() {
 
           {activeTab === "account" && (
             <form onSubmit={handleUpdateAccount}>
-              <Card className="border-white/5 bg-gray-900/40 backdrop-blur-md">
+              <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
                 <CardHeader>
                   <CardTitle>Account Information</CardTitle>
                   <CardDescription>Update your personal details and contact information.</CardDescription>
@@ -345,14 +357,14 @@ export default function PatientSettingsPage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
+                      <Label htmlFor="firstName" className="text-gray-300 font-medium">First Name</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                         <Input
                           id="firstName"
                           value={accountData.firstName}
                           onChange={(e) => setAccountData({ ...accountData, firstName: e.target.value })}
-                          className="pl-10"
+                          className="pl-10 bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600 focus:ring-violet-500/30"
                         />
                       </div>
                     </div>
@@ -362,6 +374,7 @@ export default function PatientSettingsPage() {
                         id="lastName"
                         value={accountData.lastName}
                         onChange={(e) => setAccountData({ ...accountData, lastName: e.target.value })}
+                        className="bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600 focus:ring-violet-500/30"
                       />
                     </div>
                   </div>
@@ -375,7 +388,7 @@ export default function PatientSettingsPage() {
                         type="email"
                         value={accountData.email}
                         onChange={(e) => setAccountData({ ...accountData, email: e.target.value })}
-                        className="pl-10"
+                        className="pl-10 bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600 focus:ring-violet-500/30"
                       />
                     </div>
                   </div>
@@ -388,7 +401,7 @@ export default function PatientSettingsPage() {
                         id="phone"
                         value={accountData.phone}
                         onChange={(e) => setAccountData({ ...accountData, phone: e.target.value })}
-                        className="pl-10"
+                        className="pl-10 bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600 focus:ring-violet-500/30"
                       />
                     </div>
                   </div>
@@ -406,7 +419,7 @@ export default function PatientSettingsPage() {
           {activeTab === "health" && (
             <form onSubmit={handleUpdateHealth} className="space-y-6">
               {/* Biometrics & Demographics */}
-              <Card className="border-white/5 bg-gray-900/40 backdrop-blur-md">
+              <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-rose-500" />
@@ -416,30 +429,32 @@ export default function PatientSettingsPage() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="height">Height (cm)</Label>
+                      <Label htmlFor="height" className="text-gray-300 font-medium">Height (cm)</Label>
                       <Input
                         id="height"
                         type="number"
                         placeholder="e.g. 175"
                         value={healthData.height}
                         onChange={(e) => setHealthData({ ...healthData, height: e.target.value })}
+                        className="bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="weight">Weight (kg)</Label>
+                      <Label htmlFor="weight" className="text-gray-300 font-medium">Weight (kg)</Label>
                       <Input
                         id="weight"
                         type="number"
                         placeholder="e.g. 70"
                         value={healthData.weight}
                         onChange={(e) => setHealthData({ ...healthData, weight: e.target.value })}
+                        className="bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="dob">Date of Birth</Label>
+                      <Label htmlFor="dob" className="text-gray-300 font-medium">Date of Birth</Label>
                       <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                         <Input
@@ -447,7 +462,7 @@ export default function PatientSettingsPage() {
                           type="date"
                           value={healthData.dob}
                           onChange={(e) => setHealthData({ ...healthData, dob: e.target.value })}
-                          className="pl-10"
+                          className="pl-10 bg-gray-950/50 border-white/20 text-gray-200 focus:ring-violet-500/30"
                         />
                       </div>
                     </div>
@@ -457,7 +472,7 @@ export default function PatientSettingsPage() {
                         id="gender"
                         value={healthData.gender}
                         onChange={(e) => setHealthData({ ...healthData, gender: e.target.value })}
-                        className="w-full h-10 px-3 py-2 bg-gray-800/50 border border-white/10 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                        className="w-full h-10 px-3 py-2 bg-gray-950/50 border border-white/20 rounded-lg text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all cursor-pointer"
                       >
                         <option value="">Select Gender</option>
                         <option value="male">Male</option>
@@ -469,18 +484,18 @@ export default function PatientSettingsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="bloodType">Blood Type</Label>
+                    <Label htmlFor="bloodType" className="text-gray-300 font-medium">Blood Type</Label>
                     <Input
                       id="bloodType"
                       placeholder="e.g. A+"
                       value={healthData.bloodType}
                       onChange={(e) => setHealthData({ ...healthData, bloodType: e.target.value })}
-                      className="max-w-[200px]"
+                      className="max-w-[200px] bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="address">Residential Address</Label>
+                    <Label htmlFor="address" className="text-gray-300 font-medium">Residential Address</Label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
                       <textarea
@@ -488,7 +503,7 @@ export default function PatientSettingsPage() {
                         rows={2}
                         value={healthData.address}
                         onChange={(e) => setHealthData({ ...healthData, address: e.target.value })}
-                        className="w-full px-10 py-2.5 bg-gray-800/50 border border-white/10 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 min-h-[60px]"
+                        className="w-full px-10 py-2.5 bg-gray-950/50 border border-white/20 rounded-lg text-sm text-gray-200 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 min-h-[80px] transition-all"
                         placeholder="Your full address..."
                       />
                     </div>
@@ -497,13 +512,13 @@ export default function PatientSettingsPage() {
               </Card>
 
               {/* Medical Background */}
-              <Card className="border-white/5 bg-gray-900/40 backdrop-blur-md">
+              <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Stethoscope className="h-5 w-5 text-sky-500" />
                     Medical Background
                   </CardTitle>
-                  <CardDescription>Press Enter to add items to the lists.</CardDescription>
+                  <CardDescription className="text-gray-400">Press Enter to add items to the lists.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   <TagInput
@@ -542,42 +557,44 @@ export default function PatientSettingsPage() {
 
           {activeTab === "emergency" && (
             <form onSubmit={handleUpdateHealth}>
-              <Card className="border-white/5 bg-gray-900/40 backdrop-blur-md">
+              <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
                 <CardHeader>
                   <CardTitle>Emergency Contact</CardTitle>
                   <CardDescription>Primary contact person in case of a medical emergency.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="eName">Contact Name</Label>
+                    <Label htmlFor="eName" className="text-gray-300 font-medium">Contact Name</Label>
                     <Input
                       id="eName"
                       placeholder="Full Name"
                       value={emergencyData.name}
                       onChange={(e) => setEmergencyData({ ...emergencyData, name: e.target.value })}
+                      className="bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600"
                     />
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="ePhone">Contact Phone</Label>
+                      <Label htmlFor="ePhone" className="text-gray-300 font-medium">Contact Phone</Label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                         <Input
                           id="ePhone"
                           value={emergencyData.phone}
                           onChange={(e) => setEmergencyData({ ...emergencyData, phone: e.target.value })}
-                          className="pl-10"
+                          className="pl-10 bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="relation">Relationship</Label>
+                      <Label htmlFor="relation" className="text-gray-300 font-medium">Relationship</Label>
                       <Input
                         id="relation"
                         placeholder="e.g. Spouse, Parent"
                         value={emergencyData.relation}
                         onChange={(e) => setEmergencyData({ ...emergencyData, relation: e.target.value })}
+                        className="bg-gray-950/50 border-white/20 text-gray-200 placeholder:text-gray-600"
                       />
                     </div>
                   </div>

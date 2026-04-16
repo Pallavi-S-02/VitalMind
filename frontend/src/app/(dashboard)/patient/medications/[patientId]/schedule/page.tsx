@@ -77,7 +77,7 @@ export default function MedicationSchedulePage() {
   const patientId = params?.patientId as string;
 
   const [scheduleData, setScheduleData] = useState<ScheduleData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"visual" | "raw">("visual");
 
@@ -109,11 +109,7 @@ export default function MedicationSchedulePage() {
     }
   };
 
-  useEffect(() => {
-    if (session?.accessToken) {
-      fetchSchedule();
-    }
-  }, [session, patientId]);
+  // Removed automatic fetch to allow manual trigger
 
   const scheduleBlocks = scheduleData
     ? parseScheduleIntoBlocks(scheduleData.schedule)
@@ -184,6 +180,25 @@ export default function MedicationSchedulePage() {
               className="mt-5 px-5 py-2.5 bg-red-900/40 border border-red-800/40 rounded-xl text-red-300 text-sm hover:bg-red-900/60 transition-colors"
             >
               Try Again
+            </button>
+          </div>
+        )}
+
+        {!scheduleData && !isLoading && !error && (
+          <div className="flex flex-col items-center justify-center py-20 bg-gray-900/80 border border-white/10 rounded-2xl text-center">
+            <div className="p-4 bg-teal-900/30 rounded-full mb-4">
+              <Calendar className="h-10 w-10 text-teal-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Ready to optimize your routine?</h3>
+            <p className="text-gray-400 max-w-md mx-auto mb-6 leading-relaxed text-sm">
+              Our AI can analyze your active prescriptions, lifestyle factors, and potential interactions to create a personalized, easy-to-follow daily schedule.
+            </p>
+            <button
+              onClick={fetchSchedule}
+              className="flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-500 transition-colors shadow-lg shadow-teal-900/40"
+            >
+              <ShieldCheck className="h-5 w-5" />
+              Generate My Schedule
             </button>
           </div>
         )}

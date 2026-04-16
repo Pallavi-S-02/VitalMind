@@ -57,20 +57,7 @@ export default function PatientMedicationsPage() {
   
   // Data States
   const [medications, setMedications] = useState<Prescription[]>([]);
-  const [catalog, setCatalog] = useState<MedicationCatalogItem[]>([
-    { id: "med-1", name: "Amoxicillin", description: "Antibiotic" },
-    { id: "med-2", name: "Lisinopril", description: "Blood pressure" },
-    { id: "med-3", name: "Metformin", description: "Diabetes" },
-    { id: "med-4", name: "Amlodipine", description: "Blood pressure" },
-    { id: "med-5", name: "Metoprolol", description: "Beta blocker" },
-    { id: "med-6", name: "Omeprazole", description: "Proton pump inhibitor" },
-    { id: "med-7", name: "Losartan", description: "Blood pressure" },
-    { id: "med-8", name: "Atorvastatin", description: "Cholesterol" },
-    { id: "med-9", name: "Levothyroxine", description: "Thyroid" },
-    { id: "med-10", name: "Albuterol", description: "Inhaler" },
-    { id: "med-11", name: "Gabapentin", description: "Nerve pain" },
-    { id: "med-12", name: "Aspirin", description: "Pain relief/Blood thinner" },
-  ]);
+  const [catalog, setCatalog] = useState<MedicationCatalogItem[]>([]);
   
   // UI Loading States
   const [loading, setLoading] = useState(true);
@@ -122,17 +109,7 @@ export default function PatientMedicationsPage() {
       if (res.ok) {
         const data = await res.json();
         if (data && data.length > 0) {
-          // If the backend actually has drugs, combine them with our hardcoded list
-          // ensuring no duplicates by ID
-          setCatalog(prev => {
-            const newCatalog = [...prev];
-            data.forEach((d: MedicationCatalogItem) => {
-              if (!newCatalog.find(c => c.id === d.id)) {
-                newCatalog.push(d);
-              }
-            });
-            return newCatalog;
-          });
+          setCatalog(data);
         }
       }
     } catch (err) {

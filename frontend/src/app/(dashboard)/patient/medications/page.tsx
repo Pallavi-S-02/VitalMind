@@ -8,6 +8,5 @@ export default async function MedicationsIndex() {
     redirect("/login");
   }
   
-  // The schedule page handles displaying patient medications natively
-  redirect(`/patient/medications/${session.user.id}/schedule`);
+  redirect("/patient/medications/interactions");
 }
