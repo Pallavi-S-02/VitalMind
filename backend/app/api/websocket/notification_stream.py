@@ -38,9 +38,10 @@ def handle_notification_connect(auth):
     from app.services.auth_service import AuthService
     from flask_socketio import join_room, emit
 
+    from flask_socketio import ConnectionRefusedError
     if not auth or "token" not in auth:
         logger.warning("NotificationWS: connection refused — no token")
-        return False
+        raise ConnectionRefusedError("no token")
 
     try:
         token = auth["token"]
@@ -52,7 +53,7 @@ def handle_notification_connect(auth):
             raise ValueError(decoded)
         user_id = decoded.get("sub")
         if not user_id:
-            return False
+            raise ConnectionRefusedError("invalid user_id")
 
         # Join personal room
         join_room(f"user:{user_id}")
@@ -71,7 +72,7 @@ def handle_notification_connect(auth):
 
     except Exception as exc:
         logger.warning("NotificationWS: connection refused — invalid token: %s", exc)
-        return False
+        raise ConnectionRefusedError(str(exc))
 
 
 @socketio.on("disconnect", namespace="/notifications")

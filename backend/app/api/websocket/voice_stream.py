@@ -1,82 +1,34 @@
-"""
-voice_stream.py — Socket.IO WebSocket handler for real-time voice interaction.
-
-Namespace: /voice
-
-Events (client → server):
-  join_voice_session    — Join or create a voice session room
-  audio_chunk           — Binary audio chunk (base64 encoded WebM/MP4)
-  end_voice_session     — Signal end of session; triggers final summary
-  ambient_consent       — Record patient consent for ambient listening
-
-Events (server → client):
-  voice_session_joined  — Session joined, ready for audio
-  voice_response        — Full response: transcript + spoken_text + audio_b64
-  voice_transcript      — Partial transcript (real-time streaming placeholder)
-  ambient_update        — Accumulated SOAP note update (doctor ambient mode)
-  voice_error           — Error with detail
-  session_ended         — Session closure confirmation
-
-Binary audio pipeline (per chunk):
-  client (MediaRecorder → base64)
-    → socket "audio_chunk" event
-      → decode base64 → raw audio bytes
-        → VoiceAgent.invoke()
-          → Whisper STT → language detect → NER → GPT response → TTS
-            → "voice_response" event (transcript + spoken text + mp3 b64)
-              → client plays audio
-"""
-
-from __future__ import annotations
-
-import base64
-import json
-import logging
 import uuid
+import base64
+import logging
 from datetime import datetime, timezone
-
 from app.websocket import socketio
 
 logger = logging.getLogger(__name__)
 
-# sid → { user_id, session_id, session_mode, patient_id }
-_voice_sessions: dict[str, dict] = {}
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Connection
-# ─────────────────────────────────────────────────────────────────────────────
+_voice_sessions = {}  # sid -> meta
+_live_sessions = {}   # sid -> GeminiLiveSession
 
 @socketio.on("connect", namespace="/voice")
 def handle_voice_connect(auth):
-    """Authenticate voice WebSocket connection."""
+    from flask import request
     from app.services.auth_service import AuthService
-
-    if not auth or "token" not in auth:
-        logger.warning("VoiceWS: connection refused — no token")
-        return False
+    
+    sid = request.sid
+    token = auth.get("token", "") if auth else ""
+    if token.startswith("Bearer "):
+        token = token[7:]
 
     try:
-        token = auth["token"]
-        if token.startswith("Bearer "):
-            token = token[7:]
+        payload = AuthService.decode_token(token)
+        if isinstance(payload, str):
+            raise Exception(payload)
+        user_id = payload.get("sub")
+        role = payload.get("role", "patient")
 
-        decoded = AuthService.decode_token(token)
-        if isinstance(decoded, str):
-            raise ValueError(decoded)
-        user_id = decoded.get("sub")
-        role = decoded.get("role", "patient")
-
-        if not user_id:
-            return False
-
-        from flask import request
-        _voice_sessions[request.sid] = {
+        _voice_sessions[sid] = {
             "user_id": user_id,
             "role": role,
-            "session_id": None,
-            "session_mode": "patient",
-            "patient_id": None,
         }
 
         logger.info("VoiceWS: user %s (%s) connected SID=%s", user_id, role, request.sid)
@@ -84,34 +36,26 @@ def handle_voice_connect(auth):
 
     except Exception as exc:
         logger.warning("VoiceWS: auth failed: %s", exc)
-        return False
-
+        raise ConnectionRefusedError(str(exc))
 
 @socketio.on("disconnect", namespace="/voice")
 def handle_voice_disconnect():
     from flask import request
-    session = _voice_sessions.pop(request.sid, {})
+    sid = request.sid
+
+    # Clean up Live session
+    live_session = _live_sessions.pop(sid, None)
+    if live_session:
+        live_session.close()
+
+    session = _voice_sessions.pop(sid, {})
     logger.info(
         "VoiceWS: disconnected SID=%s user=%s session=%s",
-        request.sid, session.get("user_id"), session.get("session_id"),
+        sid, session.get("user_id"), session.get("session_id"),
     )
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Session management
-# ─────────────────────────────────────────────────────────────────────────────
 
 @socketio.on("join_voice_session", namespace="/voice")
 def handle_join_voice_session(data):
-    """
-    Join or create a voice session.
-
-    Data:
-        session_id   (str, optional)  — resume existing; new UUID created if absent
-        session_mode (str)            — "patient" | "ambient"
-        patient_id   (str, optional)  — for ambient mode (doctor listening to patient)
-        language     (str, optional)  — ISO 639-1 language hint
-    """
     from flask import request
     from flask_socketio import join_room, emit
 
@@ -120,259 +64,158 @@ def handle_join_voice_session(data):
         emit("voice_error", {"detail": "Not authenticated"})
         return
 
-    session_id = data.get("session_id") or str(uuid.uuid4())
+    session_id   = data.get("session_id") or str(uuid.uuid4())
     session_mode = data.get("session_mode", "patient")
-    patient_id = data.get("patient_id") or session_meta["user_id"]
+    patient_id   = data.get("patient_id") or session_meta["user_id"]
 
-    # Ambient mode: only doctors can start
     if session_mode == "ambient" and session_meta["role"] not in ("doctor", "admin"):
         emit("voice_error", {"detail": "Ambient mode requires doctor role"})
         return
 
-    session_meta["session_id"] = session_id
-    session_meta["session_mode"] = session_mode
-    session_meta["patient_id"] = patient_id
-    session_meta["language_hint"] = data.get("language")
+    session_meta.update({
+        "session_id":    session_id,
+        "session_mode":  session_mode,
+        "patient_id":    patient_id,
+        "language_hint": data.get("language", "en"),
+    })
 
     join_room(f"voice:{session_id}")
 
+    # Load patient context from DB
+    patient_context = {}
+    patient_name    = "there"
+    try:
+        from app.models.patient import PatientProfile
+        profile = PatientProfile.query.filter_by(user_id=patient_id).first()
+        if profile:
+            try:
+                from app.models.user import User
+                user = User.query.filter_by(id=patient_id).first()
+                if user:
+                    patient_name = getattr(user, 'name', None) or getattr(user, 'username', None) or getattr(user, 'email', '').split('@')[0] or 'there'
+            except Exception:
+                pass
+
+            age = None
+            if getattr(profile, 'date_of_birth', None):
+                from datetime import date
+                try:
+                    dob = profile.date_of_birth
+                    today = date.today()
+                    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                except Exception:
+                    pass
+
+            patient_context = {
+                "name":               patient_name,
+                "age":                age,
+                "blood_type":         getattr(profile, 'blood_type', None),
+                "chronic_conditions": getattr(profile, 'chronic_diseases', []) or [],
+                "current_medications": [],
+                "allergies":          [],
+            }
+    except Exception as exc:
+        logger.warning("VoiceWS: patient profile load failed: %s", exc)
+
+    turn_count = 0
+    try:
+        import redis as redis_lib, os
+        r = redis_lib.Redis(
+            host=os.getenv("REDIS_HOST", "localhost"),
+            port=int(os.getenv("REDIS_PORT", 6379)),
+            db=int(os.getenv("REDIS_DB", 0)),
+            decode_responses=True,
+        )
+        raw = r.get(f"vitalmind:voice:{session_id}")
+        if raw:
+            import json
+            existing = json.loads(raw)
+            turn_count = len(existing.get("history", []))
+    except Exception:
+        pass
+
+    from app.services.gemini_live_service import GeminiLiveSession
+
+    _sid = request.sid
+
+    def _emit_to_sid(event, data):
+        socketio.emit(event, data, to=_sid, namespace="/voice")
+
+    live_session = GeminiLiveSession(
+        session_id=session_id,
+        patient_name=patient_name,
+        patient_context=patient_context,
+        emit_fn=_emit_to_sid,
+        turn_count=turn_count,
+        language=session_meta.get("language_hint", "en"),
+    )
+    live_session.start()
+    _live_sessions[_sid] = live_session
+
     logger.info(
-        "VoiceWS: session %s joined (mode=%s patient=%s)",
+        "VoiceWS: Live session %s started (mode=%s patient=%s)",
         session_id, session_mode, patient_id,
     )
 
     emit("voice_session_joined", {
-        "session_id": session_id,
+        "session_id":   session_id,
         "session_mode": session_mode,
-        "patient_id": patient_id,
-        "language_hint": data.get("language"),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "patient_id":   patient_id,
+        "language_hint": data.get("language", "en"),
+        "backend":      "modular-stt-llm-tts",
+        "timestamp":    datetime.now(timezone.utc).isoformat(),
     })
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Audio chunk processing
-# ─────────────────────────────────────────────────────────────────────────────
+@socketio.on("update_language", namespace="/voice")
+def handle_update_language(data):
+    from flask import request
+    sid = request.sid
+    lang = data.get("language", "en")
+    
+    session_meta = _voice_sessions.get(sid)
+    if session_meta:
+        session_meta["language_hint"] = lang
+        
+    live_session = _live_sessions.get(sid)
+    if live_session:
+        live_session.language = lang
+        logger.info("VoiceWS: Updated session %s language to %s", live_session.session_id, lang)
 
 @socketio.on("audio_chunk", namespace="/voice")
 def handle_audio_chunk(data):
-    """
-    Process an incoming audio chunk.
-
-    Data:
-        audio_b64    (str) — base64-encoded audio bytes
-        format       (str) — "webm" | "mp4" | "wav" | "ogg"
-        chunk_id     (int) — sequential chunk index (for ordering)
-        final        (bool)— True if this is the last chunk in an utterance
-
-    Response emits:
-        voice_response — when processing is complete
-        voice_error    — on failure
-    """
     from flask import request
-    from flask_socketio import emit
-
-    session_meta = _voice_sessions.get(request.sid)
-    if not session_meta or not session_meta.get("session_id"):
-        emit("voice_error", {"detail": "No active voice session. Call join_voice_session first."})
+    sid = request.sid
+    if type(data) is bytes:
+        # direct binary
+        chunk = data
+    elif type(data) is str:
+        # b64
+        import base64
+        chunk = base64.b64decode(data)
+    elif type(data) is dict:
+        import base64
+        chunk = base64.b64decode(data.get("audio_b64", ""))
+    else:
         return
 
-    audio_b64 = data.get("audio_b64", "")
-    audio_format = data.get("format", "webm")
-    is_final = data.get("final", True)
+    session = _live_sessions.get(sid)
+    if session:
+        session.send_audio(chunk)
 
-    if not audio_b64:
-        emit("voice_error", {"detail": "audio_b64 is required"})
-        return
-
-    # Decode base64 audio
-    try:
-        audio_bytes = base64.b64decode(audio_b64)
-    except Exception as exc:
-        emit("voice_error", {"detail": f"Invalid base64 audio data: {exc}"})
-        return
-
-    # Minimum chunk size check (< 1KB is likely silence)
-    if len(audio_bytes) < 1024:
-        logger.debug("VoiceWS: very small chunk (%d bytes) — skipping", len(audio_bytes))
-        return
-
-    session_id = session_meta["session_id"]
-    patient_id = session_meta["patient_id"]
-    session_mode = session_meta["session_mode"]
-    language_hint = session_meta.get("language_hint")
-
-    logger.info(
-        "VoiceWS: audio_chunk %d bytes session=%s final=%s",
-        len(audio_bytes), session_id, is_final,
-    )
-
-    # Only process on final chunk (complete utterance)
-    if not is_final:
-        emit("voice_transcript", {"status": "streaming", "session_id": session_id})
-        return
-
-    try:
-        from app.agents.voice_agent import process_voice_turn
-        from app.models.patient import PatientProfile
-
-        # Load patient context if available
-        patient_context = {}
-        if patient_id:
-            try:
-                from app.models.db import db
-                profile = PatientProfile.query.filter_by(user_id=patient_id).first()
-                if profile:
-                    patient_context = {
-                        "name": f"{profile.first_name} {profile.last_name}",
-                        "age": getattr(profile, "age", None),
-                        "chronic_conditions": getattr(profile, "chronic_conditions", []),
-                        "current_medications": getattr(profile, "current_medications", []),
-                        "allergies": getattr(profile, "allergies", []),
-                    }
-            except Exception:
-                pass
-
-        result = process_voice_turn(
-            audio_data=audio_bytes,
-            session_id=session_id,
-            patient_id=patient_id,
-            audio_format=audio_format,
-            session_mode=session_mode,
-            language_hint=language_hint,
-            patient_context=patient_context,
-        )
-
-        if not result:
-            emit("voice_error", {"detail": "Voice processing returned no result"})
-            return
-
-        # For ambient mode, emit the SOAP note update
-        if session_mode == "ambient":
-            emit("ambient_update", {
-                "session_id": session_id,
-                "transcript": result.get("transcript", ""),
-                "soap_segment": result.get("entities", []),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            })
-        else:
-            # voice_response is emitted inside stream_audio_response node
-            # but we also emit here as fallback if the room emit didn't fire
-            if not result.get("audio_b64"):
-                emit("voice_response", {
-                    **result,
-                    "note": "TTS unavailable — text response provided",
-                })
-
-        # Emergency: additionally emit a high-priority alert
-        if result.get("is_emergency"):
-            emit("voice_emergency", {
-                "session_id": session_id,
-                "patient_id": patient_id,
-                "transcript": result.get("transcript", ""),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }, room="ward:all", namespace="/monitoring")
-
-    except Exception as exc:
-        logger.exception("VoiceWS: audio_chunk processing failed: %s", exc)
-        emit("voice_error", {
-            "detail": "Voice processing failed. Please try again.",
-            "session_id": session_id,
-        })
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Session end
-# ─────────────────────────────────────────────────────────────────────────────
+@socketio.on("audio_turn_complete", namespace="/voice")
+def handle_audio_turn_complete(data=None):
+    from flask import request
+    sid = request.sid
+    session = _live_sessions.get(sid)
+    if session:
+        session.end_turn()
 
 @socketio.on("end_voice_session", namespace="/voice")
-def handle_end_voice_session(data):
-    """
-    End the current voice session.
-    For ambient mode, triggers final SOAP note consolidation.
-    """
+def handle_end_voice_session(data=None):
     from flask import request
-    from flask_socketio import leave_room, emit
+    sid = request.sid
+    session = _live_sessions.get(sid)
+    if session:
+        session.close()
+        _live_sessions.pop(sid, None)
 
-    session_meta = _voice_sessions.get(request.sid, {})
-    session_id = session_meta.get("session_id") or data.get("session_id")
-    session_mode = session_meta.get("session_mode", "patient")
-    patient_id = session_meta.get("patient_id")
-
-    if session_id:
-        leave_room(f"voice:{session_id}")
-        session_meta["session_id"] = None
-
-    # Clean up Redis session
-    if session_id:
-        try:
-            import redis as redis_lib, os
-            r = redis_lib.Redis(
-                host=os.getenv("REDIS_HOST", "localhost"),
-                port=int(os.getenv("REDIS_PORT", 6379)),
-                db=int(os.getenv("REDIS_DB", 0)),
-                decode_responses=True,
-            )
-            # Don't delete — let TTL expire so history remains available briefly
-            r.expire(f"vitalmind:voice:{session_id}", 300)  # 5 min grace
-        except Exception:
-            pass
-
-    logger.info("VoiceWS: session %s ended (mode=%s)", session_id, session_mode)
-
-    emit("session_ended", {
-        "session_id": session_id,
-        "session_mode": session_mode,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Ambient consent
-# ─────────────────────────────────────────────────────────────────────────────
-
-@socketio.on("ambient_consent", namespace="/voice")
-def handle_ambient_consent(data):
-    """
-    Record explicit patient consent for ambient listening mode.
-    REQUIRED before ambient mode can begin — compliance mandate.
-
-    Data:
-        session_id    (str)
-        patient_id    (str)
-        consent_given (bool)
-    """
-    from flask import request
-    from flask_socketio import emit
-
-    session_meta = _voice_sessions.get(request.sid, {})
-    doctor_id = session_meta.get("user_id")
-
-    session_id = data.get("session_id") or session_meta.get("session_id")
-    patient_id = data.get("patient_id") or session_meta.get("patient_id")
-    consent_given = bool(data.get("consent_given", False))
-
-    if not session_id or not patient_id:
-        emit("voice_error", {"detail": "session_id and patient_id required for consent logging"})
-        return
-
-    try:
-        from app.agents.voice_agent import log_ambient_consent
-        log_ambient_consent(
-            patient_id=patient_id,
-            doctor_id=doctor_id or "unknown",
-            session_id=session_id,
-            consent_given=consent_given,
-        )
-        emit("ambient_consent_logged", {
-            "session_id": session_id,
-            "consent_given": consent_given,
-            "patient_id": patient_id,
-        })
-        logger.info(
-            "VoiceWS: ambient consent logged session=%s patient=%s consent=%s",
-            session_id, patient_id, consent_given,
-        )
-    except Exception as exc:
-        logger.error("VoiceWS: consent logging failed: %s", exc)
-        emit("voice_error", {"detail": "Consent logging failed"})

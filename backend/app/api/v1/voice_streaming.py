@@ -160,9 +160,12 @@ def _generate_stream(
     4. Per-sentence TTS with look-ahead pre-fetching via ThreadPoolExecutor
     """
     import re as _re
+    import time as _time
     from concurrent.futures import ThreadPoolExecutor
     from google import genai as google_genai
     from google.genai import types as genai_types
+
+    _t_start = _time.perf_counter()
 
     mime_map = {
         "webm": "audio/webm", "mp4": "audio/mp4", "wav": "audio/wav",
@@ -207,42 +210,91 @@ def _generate_stream(
     transcript         = ""
     detected_language  = language_hint or "en"
     full_response_text = ""
-    urgency_flags: list[str] = []
-    primary_intent = "symptom_report"
+    urgency_flags: list = []
+    primary_intent     = "symptom_report"
 
     try:
         unified_prompt = UNIFIED_AUDIO_DOCTOR_PROMPT.format(
-            patient_context=json.dumps(ctx_for_prompt)[:300],
-            session_summary=session_context[:600],
+            patient_context=json.dumps(ctx_for_prompt),
+            session_summary=session_context,
             turn_count=turn_count,
         )
         stt_resp = gai_client.models.generate_content(
-            model=_GEMINI_FLASH,   # Always Flash — no Pro/thinking overhead
+            model=_GEMINI_FLASH,
             contents=[unified_prompt, audio_part],
             config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
                 temperature=0.3,
-                max_output_tokens=600,
+                max_output_tokens=1500,   # was 600 — caused JSON truncation mid-string
             ),
         )
         raw_text = (stt_resp.text or "").strip()
-        # Strip markdown fences Gemini sometimes adds
-        raw_text = _re.sub(r'^```(?:json)?\s*\n?', '', raw_text, flags=_re.IGNORECASE)
-        raw_text = _re.sub(r'\n?```\s*$', '', raw_text.strip())
+        logger.debug("StreamVoice: raw Gemini response: %r", raw_text[:200])
 
-        parsed             = json.loads(raw_text)
-        transcript         = parsed.get("transcript", "").strip()
-        detected_language  = parsed.get("detected_language", language_hint or "en")
-        full_response_text = parsed.get("response", "").strip()
-        urgency_flags      = parsed.get("urgency_flags", [])
-        primary_intent     = parsed.get("primary_intent", "symptom_report")
+        try:
+            parsed = json.loads(raw_text)
+        except json.JSONDecodeError:
+            # Regex fallback: extract fields even from partial/malformed JSON
+            logger.warning("StreamVoice: JSON decode failed, attempting regex repair on: %r", raw_text[:120])
+            import re as _re2
+            def _extract(key: str) -> str:
+                m = _re2.search(rf'"{key}"\s*:\s*"((?:[^"\\]|\\.)*)"', raw_text, _re2.DOTALL)
+                return m.group(1) if m else ""
+            transcript         = _extract("transcript")
+            detected_language  = _extract("detected_language") or (language_hint or "en")
+            full_response_text = _extract("response")
+            if not transcript and not full_response_text:
+                yield _sse({"type": "error", "message": "Voice processing failed. Please try again."})
+                return
+            # skip the parsed.get() block below
+            urgency_flags  = []
+            primary_intent = "symptom_report"
+        else:
+            transcript         = parsed.get("transcript", "").strip()
+            detected_language  = parsed.get("detected_language", language_hint or "en")
+            full_response_text = parsed.get("response", "").strip()
+            urgency_flags      = parsed.get("urgency_flags", [])
+            primary_intent     = parsed.get("primary_intent", "symptom_report")
 
     except Exception as exc:
         logger.error("StreamVoice: unified Gemini call failed: %s", exc)
         yield _sse({"type": "error", "message": "Voice processing failed. Please try again."})
         return
 
+    _t_gemini = _time.perf_counter()
+    logger.info("StreamVoice ⏱ Gemini call: %.0fms", (_t_gemini - _t_start) * 1000)
+
     if not transcript:
         yield _sse({"type": "error", "message": "Could not hear audio clearly. Please try again."})
+        return
+
+    # ── Closing-intent detection ────────────────────────────────────────────────
+    # If patient says thank you / bye / done → respond warmly and close session
+    _CLOSING_RE = _re.compile(
+        r'^\s*(thank(?:s| you)|dhanyavaad|shukriya|ok\s*thanks?|bye|goodbye|alvida|'
+        r'theek\s*hai\s*(?:shukriya|thanks?)?|bas\s*(?:shukriya|thanks?)?|'
+        r'that\s*(?:is\s*)?all|no\s*more\s*questions?|i\s*(?:am\s*)?done|'
+        r'accha\s*(?:ji\s*)?(?:shukriya|thanks?)?)\s*[.!]*\s*$',
+        _re.IGNORECASE | _re.UNICODE
+    )
+    if _CLOSING_RE.match(transcript):
+        _farewells = {
+            "hi": "Bilkul, Pallavi ji! Apna khayal rakhein aur jald hi doctor se mil lein. Get well soon! 🌸",
+            "ta": "சரி, கவலைப்படாதீர்கள். விரைவில் குணமாவீர்கள்!",
+            "te": "సరే, త్వరలో కోలుకోండి! జాగ్రత్తగా ఉండండి.",
+            "en": "You're welcome! Take care and please do follow up with your doctor soon. Wishing you a speedy recovery! 🌸",
+        }
+        farewell_text = _farewells.get(detected_language, _farewells["en"])
+        lang_code, voice_name, ssml_gender = get_google_tts_voice(detected_language)
+        audio_b64 = _tts_sentence(farewell_text, lang_code, voice_name, ssml_gender)
+        yield _sse({"type": "chunk", "chunk_index": 0, "text": farewell_text,
+                    "audio_b64": audio_b64, "language": detected_language})
+        yield _sse({"type": "done", "transcript": transcript, "spoken_response": farewell_text,
+                    "language": detected_language, "is_emergency": False,
+                    "symptom_summary": {"urgency": "routine", "symptoms": [],
+                                        "differential": None, "recommended_tests": [],
+                                        "phase": "closed", "turn": turn_count + 1},
+                    "session_id": session_id, "chunk_count": 1})
         return
 
     lang_code, voice_name, ssml_gender = get_google_tts_voice(
