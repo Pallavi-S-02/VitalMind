@@ -17,6 +17,14 @@ const stateConfig = {
     bgClass: "bg-[#040814]",
     pulseColor: "border-cyan-500/20"
   },
+  connecting: {
+    label: "ESTABLISHING LINK",
+    subLabel: "Connecting to Gemini Live…",
+    ringColor: "ring-amber-500/30",
+    glowClass: "shadow-[0_0_50px_rgba(245,158,11,0.15)]",
+    bgClass: "bg-[#040814]",
+    pulseColor: "border-amber-500/30"
+  },
   listening: {
     label: "PROCESSING AUDIO",
     subLabel: "Acoustic Sensors Active",
@@ -35,8 +43,10 @@ const stateConfig = {
   },
 };
 
+
 export default function DoctorAvatar({ state }: DoctorAvatarProps) {
-  const config = stateConfig[state];
+  const config = stateConfig[state] ?? stateConfig.idle;
+
 
   // Simli AI Integration Hook
   const { simliAudioPCM16, consumeSimliAudio, simliConnected, setSimliConnected } = useAIDoctorStore();
