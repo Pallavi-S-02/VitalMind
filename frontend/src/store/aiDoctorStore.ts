@@ -101,9 +101,17 @@ let _micSource: MediaStreamAudioSourceNode | null = null;
 let _scriptProcessor: ScriptProcessorNode | null = null;
 let _currentToken: string | null = null;
 
-// Playback queue for arriving 24kHz PCM chunks
-let _playbackStartTime = 0;
-let _playbackScheduled = 0;
+// Current TTS audio source — cancelled when a new response arrives
+let _currentTTSSource: AudioBufferSourceNode | null = null;
+
+/** Cancel any currently playing TTS audio immediately */
+function cancelCurrentTTS() {
+  if (_currentTTSSource) {
+    try { _currentTTSSource.stop(0); } catch (_) {}
+    _currentTTSSource.disconnect();
+    _currentTTSSource = null;
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Audio utilities
@@ -132,60 +140,37 @@ function float32ToPCM16(input: Float32Array): ArrayBuffer {
 }
 
 /**
- * Decode a base64 PCM16 chunk (from ElevenLabs) and schedule it for gapless playback.
- * Does NOT use decodeAudioData — avoids MP3 padding/overlapping which causes severe echo.
+ * Play TTS audio from an ArrayBuffer (MP3 format).
+ * Uses the browser's native decodeAudioData — hardware-accelerated, zero timing drift,
+ * works identically on all networks/devices. Single AudioBufferSource plays the full
+ * response cleanly, solving the kirrrr static noise from chunked-PCM scheduling.
  */
-async function playPCM16Chunk(
-  audioB64: string,
+async function playAudioBuffer(
+  arrayBuffer: ArrayBuffer,
   set: (s: Partial<AIDoctorState>) => void
 ): Promise<void> {
   try {
     const ctx = getAudioCtx();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
-    // Decode base64 → binary string
-    const binary = atob(audioB64);
-    
-    // Ensure even byte length for 16-bit PCM
-    const validLen = binary.length - (binary.length % 2);
-    const buffer = new ArrayBuffer(validLen);
-    const view = new Uint8Array(buffer);
-    for (let i = 0; i < validLen; i++) {
-        view[i] = binary.charCodeAt(i);
-    }
-    const pcm16 = new Int16Array(buffer);
-
-    // Convert Int16 PCM to Float32 [-1.0, 1.0] for Web Audio API
-    const sampleRate = 22050; // ElevenLabs pcm_22050 format
-    const audioBuffer = ctx.createBuffer(1, pcm16.length, sampleRate);
-    const channelData = audioBuffer.getChannelData(0);
-    for (let i = 0; i < pcm16.length; i++) {
-      channelData[i] = pcm16[i] / 32768.0;
-    }
+    // Cancel anything still playing before starting new audio
+    cancelCurrentTTS();
 
     const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
+    source.buffer   = audioBuffer;
     source.connect(ctx.destination);
-
-    const now = ctx.currentTime;
-    // Add small playback buffer to prevent starvation gaps between websocket chunks
-    if (_playbackStartTime < now) {
-      _playbackStartTime = now + 0.05;
-      set({ avatarState: "speaking", isSpeaking: true, isProcessing: false });
-    }
-
-    source.start(_playbackStartTime);
-    _playbackStartTime += audioBuffer.duration;
-    _playbackScheduled++;
+    _currentTTSSource = source;
 
     source.onended = () => {
-      _playbackScheduled--;
-      if (_playbackScheduled <= 0) {
-        _playbackScheduled = 0;
-        set({ avatarState: "idle", isSpeaking: false });
-      }
+      _currentTTSSource = null;
+      set({ avatarState: "idle", isSpeaking: false });
     };
+
+    set({ avatarState: "speaking", isSpeaking: true, isProcessing: false });
+    source.start(0);
   } catch (e) {
-    console.error("[VoiceWS] PCM decode error:", e);
+    console.error("[TTS] Audio decode/play error:", e);
+    set({ avatarState: "idle", isSpeaking: false });
   }
 }
 
@@ -310,16 +295,13 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
     // live_audio_chunk: Raw PCM16 chunk from ElevenLabs TTS (base64-encoded)
     socket.on("live_audio_chunk", (data: {
       audio_b64?: string;
-      audio_format?: string;   // "pcm16" from new backend
+      audio_format?: string;
       sample_rate?: number;
       chunk_index: number;
     }) => {
-      set({ isProcessing: false }); // ALWAYS clear processing state when we get any audio
-      if (!data.audio_b64) return;
-      // Decode raw PCM directly to prevent MP3 artifacting + overlapping echoes
-      playPCM16Chunk(data.audio_b64, set).catch((e) =>
-        console.error("[VoiceWS] PCM playback error:", e)
-      );
+      // Audio is now handled via tts_request (browser-side ElevenLabs MP3).
+      // This event is kept for compatibility but no longer drives playback.
+      set({ isProcessing: false });
     });
 
     // voice_turn_text: transcript + doctor reply for the chat feed
@@ -372,101 +354,63 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
       });
     });
 
-    // ── tts_request: Browser calls ElevenLabs directly ────────────────────
-    // Backend sends the text; browser makes the ElevenLabs API call from the
-    // user's own IP (not Render's datacenter IP) — bypasses free-tier IP block.
+    // ── tts_request: Browser calls ElevenLabs directly ───────────────────
+    // Backend sends text; browser fetches MP3 from ElevenLabs using the user's
+    // own IP (not Render's datacenter IP) — bypasses free-tier IP block.
+    //
+    // Architecture: MP3 full-buffer → decodeAudioData → single AudioBufferSource
+    // This is the browser-native audio path: hardware-accelerated, zero timing
+    // drift, identical quality on all networks. Eliminates the chunked-PCM
+    // scheduling that caused kirrrr static on production.
     socket.on("tts_request", (data: { text: string; voice_id?: string; turn: number }) => {
       if (!data.text) return;
 
       const ELEVEN_KEY   = process.env.NEXT_PUBLIC_ELEVEN_KEY   || "";
       const ELEVEN_VOICE = data.voice_id
         || process.env.NEXT_PUBLIC_ELEVEN_VOICE
-        || "EXAVITQu4vr4xnSDxMaL";  // Rachel (default)
+        || "EXAVITQu4vr4xnSDxMaL";  // Rachel
 
       if (!ELEVEN_KEY) {
-        // No key available — fall back to browser speech synthesis
-        console.warn("[TTS] No NEXT_PUBLIC_ELEVEN_KEY — using speechSynthesis fallback");
+        console.warn("[TTS] No NEXT_PUBLIC_ELEVEN_KEY — using speechSynthesis");
         browserSpeakFallback(data.text, set);
         return;
       }
 
-      set({ avatarState: "speaking", isSpeaking: true, isProcessing: false });
-      _playbackStartTime = 0;
-      _playbackScheduled = 0;
+      // Cancel any audio still playing from a previous turn
+      cancelCurrentTTS();
+      set({ isProcessing: false });
 
-      // Helper: safely convert Uint8Array → base64 without spread (avoids
-      // "Maximum call stack exceeded" on large chunks in some browsers/envs)
-      const uint8ToB64 = (bytes: Uint8Array): string => {
-        let binary = "";
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-      };
-
-      // Call ElevenLabs streaming API directly from the browser.
-      // NOTE: Do NOT set Accept header — it conflicts with output_format in body.
-      //       Omitting Accept lets ElevenLabs honour output_format=pcm_22050.
-      const url = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}/stream`;
+      // Fetch MP3 from ElevenLabs — browser decodes it via decodeAudioData (native)
+      const url = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}`;
       fetch(url, {
         method: "POST",
         headers: {
           "xi-api-key":   ELEVEN_KEY,
           "Content-Type": "application/json",
-          // No Accept header — let ElevenLabs return pcm_22050 as requested in body
+          "Accept":       "audio/mpeg",
         },
         body: JSON.stringify({
           text:       data.text,
           model_id:   "eleven_turbo_v2_5",
-          voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
-          output_format: "pcm_22050",   // raw 16-bit PCM @ 22050 Hz
+          output_format: "mp3_44100_128",
+          voice_settings: {
+            stability:        0.45,
+            similarity_boost: 0.80,
+            style:            0.0,
+            use_speaker_boost: true,
+          },
         }),
       })
         .then(async (res) => {
-          if (!res.ok || !res.body) {
+          if (!res.ok) {
             const err = await res.text().catch(() => res.statusText);
             console.error("[TTS] ElevenLabs error:", res.status, err);
             browserSpeakFallback(data.text, set);
             return;
           }
-
-          const reader = res.body.getReader();
-          let buffer    = new Uint8Array(0);
-          // ~0.2s of PCM @ 22050Hz, 16-bit mono = 22050 * 0.2 * 2 = 8820 bytes
-          const CHUNK   = 8820;
-
-          const readNext = async () => {
-            const { done, value } = await reader.read();
-
-            if (value) {
-              const merged = new Uint8Array(buffer.length + value.length);
-              merged.set(buffer);
-              merged.set(value, buffer.length);
-              buffer = merged;
-            }
-
-            // Drain buffer in fixed-size chunks for gapless playback
-            while (buffer.length >= CHUNK) {
-              const slice = buffer.slice(0, CHUNK);
-              buffer      = buffer.slice(CHUNK);
-              await playPCM16Chunk(uint8ToB64(slice), set);
-            }
-
-            if (!done) {
-              readNext();
-            } else {
-              // Flush any remaining bytes
-              if (buffer.length > 0) {
-                await playPCM16Chunk(uint8ToB64(buffer), set);
-              }
-              console.log(`[TTS] Turn ${data.turn} audio complete`);
-            }
-          };
-
-          readNext().catch((e) => {
-            console.error("[TTS] Stream read error:", e);
-            set({ avatarState: "idle", isSpeaking: false });
-          });
+          const arrayBuffer = await res.arrayBuffer();
+          console.log(`[TTS] Turn ${data.turn}: ${arrayBuffer.byteLength} bytes received`);
+          await playAudioBuffer(arrayBuffer, set);
         })
         .catch((e) => {
           console.error("[TTS] Fetch error:", e);
@@ -474,8 +418,7 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
         });
     });
 
-    // tts_fallback: legacy event kept for compatibility (e.g. during local dev
-    // where backend still emits it on ElevenLabs error)
+    // tts_fallback: browser Web Speech API safety net
     socket.on("tts_fallback", (data: { text: string }) => {
       if (data.text) browserSpeakFallback(data.text, set);
     });
