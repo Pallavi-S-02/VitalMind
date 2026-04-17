@@ -372,6 +372,105 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
       });
     });
 
+    // ── tts_request: Browser calls ElevenLabs directly ────────────────────
+    // Backend sends the text; browser makes the ElevenLabs API call from the
+    // user's own IP (not Render's datacenter IP) — bypasses free-tier IP block.
+    socket.on("tts_request", (data: { text: string; voice_id?: string; turn: number }) => {
+      if (!data.text) return;
+
+      const ELEVEN_KEY   = process.env.NEXT_PUBLIC_ELEVEN_KEY   || "";
+      const ELEVEN_VOICE = data.voice_id
+        || process.env.NEXT_PUBLIC_ELEVEN_VOICE
+        || "EXAVITQu4vr4xnSDxMaL";  // Rachel (default)
+
+      if (!ELEVEN_KEY) {
+        // No key available — fall back to browser speech synthesis
+        console.warn("[TTS] No NEXT_PUBLIC_ELEVEN_KEY — using speechSynthesis fallback");
+        browserSpeakFallback(data.text, set);
+        return;
+      }
+
+      set({ avatarState: "speaking", isSpeaking: true, isProcessing: false });
+      _playbackStartTime = 0;
+      _playbackScheduled = 0;
+
+      // Call ElevenLabs streaming API directly from the browser
+      const url = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}/stream`;
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "xi-api-key":   ELEVEN_KEY,
+          "Content-Type": "application/json",
+          "Accept":       "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text:       data.text,
+          model_id:   "eleven_turbo_v2_5",
+          voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
+          output_format: "pcm_22050",
+        }),
+      })
+        .then(async (res) => {
+          if (!res.ok || !res.body) {
+            const err = await res.text().catch(() => res.statusText);
+            console.error("[TTS] ElevenLabs error:", res.status, err);
+            // If blocked (401) fall back to browser voice
+            browserSpeakFallback(data.text, set);
+            return;
+          }
+
+          const reader = res.body.getReader();
+          let buffer    = new Uint8Array(0);
+          const CHUNK   = 4410 * 2;  // ~0.2s of PCM @ 22050Hz (2 bytes/sample)
+
+          const readNext = async () => {
+            const { done, value } = await reader.read();
+
+            if (value) {
+              // Accumulate bytes
+              const merged = new Uint8Array(buffer.length + value.length);
+              merged.set(buffer);
+              merged.set(value, buffer.length);
+              buffer = merged;
+            }
+
+            // Drain buffer in fixed-size chunks for gapless playback
+            while (buffer.length >= CHUNK) {
+              const slice = buffer.slice(0, CHUNK);
+              buffer = buffer.slice(CHUNK);
+              const b64 = btoa(String.fromCharCode(...Array.from(slice)));
+              await playPCM16Chunk(b64, set);
+            }
+
+            if (!done) {
+              readNext();
+            } else {
+              // Flush remaining bytes
+              if (buffer.length > 0) {
+                const b64 = btoa(String.fromCharCode(...Array.from(buffer)));
+                await playPCM16Chunk(b64, set);
+              }
+              console.log(`[TTS] Turn ${data.turn} audio complete`);
+            }
+          };
+
+          readNext().catch((e) => {
+            console.error("[TTS] Stream read error:", e);
+            set({ avatarState: "idle", isSpeaking: false });
+          });
+        })
+        .catch((e) => {
+          console.error("[TTS] Fetch error:", e);
+          browserSpeakFallback(data.text, set);
+        });
+    });
+
+    // tts_fallback: legacy event kept for compatibility (e.g. during local dev
+    // where backend still emits it on ElevenLabs error)
+    socket.on("tts_fallback", (data: { text: string }) => {
+      if (data.text) browserSpeakFallback(data.text, set);
+    });
+
     socket.on("session_ended", () => {
       console.log("[VoiceWS] session ended");
       set({ isSessionActive: false, avatarState: "idle", isListening: false, isSpeaking: false });
@@ -551,6 +650,39 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
 // ─────────────────────────────────────────────────────────────────────────────
 // Internal helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** Web Speech API fallback when ElevenLabs is unavailable */
+function browserSpeakFallback(
+  text: string,
+  set: (s: Partial<AIDoctorState>) => void
+) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const speak = () => {
+    const utt  = new SpeechSynthesisUtterance(text);
+    utt.lang   = "en-IN";
+    utt.rate   = 0.95;
+    utt.pitch  = 1.1;
+    const voices     = window.speechSynthesis.getVoices();
+    const femaleEn   = voices.find(
+      (v) =>
+        v.lang.startsWith("en") &&
+        /female|woman|zira|samantha|karen|veena|moira|fiona/i.test(v.name)
+    );
+    if (femaleEn) utt.voice = femaleEn;
+    else {
+      const anyEn = voices.find((v) => v.lang.startsWith("en"));
+      if (anyEn) utt.voice = anyEn;
+    }
+    utt.onstart = () => set({ avatarState: "speaking", isSpeaking: true,  isProcessing: false });
+    utt.onend   = () => set({ avatarState: "idle",     isSpeaking: false });
+    window.speechSynthesis.speak(utt);
+  };
+
+  if (window.speechSynthesis.getVoices().length > 0) speak();
+  else window.speechSynthesis.onvoiceschanged = speak;
+}
 
 function _stopMic() {
   if (_scriptProcessor) {

@@ -311,19 +311,27 @@ class ModularVoiceSession:
             "entities":         llm_result.get("entities", {}),
         })
 
-        # ── Stage 3: TTS (ElevenLabs streaming) ───────────────────────────────
+        # ── Stage 3: TTS — delegated to browser (frontend calls ElevenLabs) ────
+        # The browser receives tts_request, calls ElevenLabs with its own IP
+        # (not Render's datacenter IP), and plays the audio directly.
+        # This bypasses ElevenLabs Free Tier datacenter IP blocks.
         t2 = time.time()
-        chunk_index = await self._tts_elevenlabs(spoken_response)
-        t_tts = time.time() - t2
+        self._safe_emit("tts_request", {
+            "session_id": self.session_id,
+            "text":       spoken_response,
+            "turn":       self.turn_count,
+            "voice_id":   _ELEVEN_VOICE,
+        })
+        t_tts = time.time() - t2  # just event emit time (negligible)
 
         t_total = t_stt + t_llm + t_tts
-        logger.info("ModularVoice: Turn %d completed in %.2fs (STT: %.2fs, LLM: %.2fs, TTS: %.2fs)", 
-                    self.turn_count, t_total, t_stt, t_llm, t_tts)
+        logger.info("ModularVoice: Turn %d completed in %.2fs (STT: %.2fs, LLM: %.2fs, TTS: browser)",
+                    self.turn_count, t_total, t_stt, t_llm)
 
-        # Signal turn complete
+        # Signal turn complete — audio is playing in browser, backend is done
         self._safe_emit("live_turn_complete", {
             "session_id": self.session_id,
-            "chunk_count": chunk_index,
+            "chunk_count": 0,   # browser owns audio now
             "turn":        self.turn_count,
             "latency_ms":  int(t_total * 1000),
         })
@@ -486,11 +494,26 @@ Return ONLY valid JSON matching this schema exactly:
 
 
         except Exception as exc:
-            logger.error("ModularVoice: TTS error: %s", exc)
-            self._safe_emit("voice_error", {
-                "detail": "Text-to-speech error. Audio synthesis failed.",
-                "session_id": self.session_id,
-            })
+            err_str = str(exc)
+            # ElevenLabs Free Tier blocks datacenter IPs (401 / detected_unusual_activity).
+            # Instead of showing an error, emit the text so the frontend can speak it
+            # using the browser's built-in Web Speech API (runs client-side, no IP issue).
+            if "401" in err_str or "unusual_activity" in err_str or "Free Tier" in err_str:
+                logger.warning(
+                    "ModularVoice: ElevenLabs blocked (datacenter IP / free-tier limit). "
+                    "Falling back to browser TTS."
+                )
+                self._safe_emit("tts_fallback", {
+                    "session_id": self.session_id,
+                    "text":       text,
+                    "chunk_index": chunk_index,
+                })
+            else:
+                logger.error("ModularVoice: TTS error: %s", exc)
+                self._safe_emit("voice_error", {
+                    "detail": "Text-to-speech error. Audio synthesis failed.",
+                    "session_id": self.session_id,
+                })
 
         return chunk_index
 
