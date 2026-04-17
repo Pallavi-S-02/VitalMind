@@ -6,7 +6,7 @@ import * as z from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Stethoscope, User, Zap, Copy, Check } from "lucide-react";
 
 import {
   Form,
@@ -20,6 +20,33 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+
+const DEMO_ACCOUNTS = [
+  {
+    label: "Doctor",
+    email: "dr.sharma@vitalmind.com",
+    password: "Doctor123!",
+    role: "doctor" as const,
+    icon: Stethoscope,
+    gradient: "from-blue-600/20 to-indigo-600/20",
+    border: "border-blue-500/30 hover:border-blue-400/60",
+    badge: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    iconColor: "text-blue-400",
+    btnGradient: "from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500",
+  },
+  {
+    label: "Patient",
+    email: "john@test.com",
+    password: "Patient123!",
+    role: "patient" as const,
+    icon: User,
+    gradient: "from-emerald-600/20 to-teal-600/20",
+    border: "border-emerald-500/30 hover:border-emerald-400/60",
+    badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    iconColor: "text-emerald-400",
+    btnGradient: "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500",
+  },
+];
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -44,6 +71,13 @@ export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(key);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -262,6 +296,80 @@ export default function RegisterPage() {
           </div>
         </CardFooter>
       </Card>
+
+      {/* ── Demo Accounts ─────────────────────────────────────────────── */}
+      <div className="z-10 w-full max-w-md mt-4">
+        {/* Divider */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
+            <Zap className="w-3 h-3 text-yellow-400" />
+            Demo Accounts
+          </span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {DEMO_ACCOUNTS.map((account) => {
+            const Icon = account.icon;
+            return (
+              <div
+                key={account.label}
+                className={`rounded-xl border bg-gradient-to-br ${account.gradient} ${account.border} p-3.5 transition-all duration-200`}
+              >
+                {/* Badge */}
+                <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider mb-2.5 ${account.badge}`}>
+                  <Icon className="w-3 h-3" />
+                  {account.label}
+                </div>
+
+                {/* Email */}
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[10px] text-slate-400 font-mono flex-1 truncate">{account.email}</span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(account.email, `${account.label}-email`)}
+                    className="shrink-0 p-0.5 rounded text-slate-500 hover:text-white transition-colors"
+                    title="Copy email"
+                  >
+                    {copiedField === `${account.label}-email`
+                      ? <Check className="w-3 h-3 text-emerald-400" />
+                      : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+
+                {/* Password */}
+                <div className="flex items-center gap-1 mb-3">
+                  <span className="text-[10px] text-slate-400 font-mono flex-1">{account.password}</span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(account.password, `${account.label}-pass`)}
+                    className="shrink-0 p-0.5 rounded text-slate-500 hover:text-white transition-colors"
+                    title="Copy password"
+                  >
+                    {copiedField === `${account.label}-pass`
+                      ? <Check className="w-3 h-3 text-emerald-400" />
+                      : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+
+                {/* Sign in button */}
+                <Link
+                  href={`/login?email=${encodeURIComponent(account.email)}&hint=${encodeURIComponent(account.password)}`}
+                  className={`flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r ${account.btnGradient} py-1.5 text-[11px] font-semibold text-white transition-all`}
+                >
+                  <Zap className="w-3 h-3" />
+                  Sign in as {account.label}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="text-center text-[10px] text-slate-600 mt-3">
+          Pre-seeded test accounts — click "Sign in" to go directly to the login page.
+        </p>
+      </div>
     </div>
   );
 }

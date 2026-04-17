@@ -5,9 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 
 import {
   Form,
@@ -28,14 +28,19 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefillEmail = searchParams.get("email") ?? "";
+  const prefillPassword = searchParams.get("hint") ?? "";
+  const isDemoFill = Boolean(prefillEmail && prefillPassword);
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: prefillEmail,
+      password: prefillPassword,
     },
   });
 
@@ -128,6 +133,13 @@ export default function LoginPage() {
               {error && (
                 <div className="p-3 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-md">
                   {error}
+                </div>
+              )}
+
+              {isDemoFill && !error && (
+                <div className="flex items-center gap-2 p-2.5 text-xs text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
+                  <Zap className="w-3.5 h-3.5 shrink-0 text-yellow-400" />
+                  Demo credentials pre-filled — just click Sign In!
                 </div>
               )}
 
