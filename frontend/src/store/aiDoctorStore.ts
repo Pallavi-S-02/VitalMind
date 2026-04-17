@@ -394,40 +394,51 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
       _playbackStartTime = 0;
       _playbackScheduled = 0;
 
-      // Call ElevenLabs streaming API directly from the browser
+      // Helper: safely convert Uint8Array → base64 without spread (avoids
+      // "Maximum call stack exceeded" on large chunks in some browsers/envs)
+      const uint8ToB64 = (bytes: Uint8Array): string => {
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+      };
+
+      // Call ElevenLabs streaming API directly from the browser.
+      // NOTE: Do NOT set Accept header — it conflicts with output_format in body.
+      //       Omitting Accept lets ElevenLabs honour output_format=pcm_22050.
       const url = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}/stream`;
       fetch(url, {
         method: "POST",
         headers: {
           "xi-api-key":   ELEVEN_KEY,
           "Content-Type": "application/json",
-          "Accept":       "audio/mpeg",
+          // No Accept header — let ElevenLabs return pcm_22050 as requested in body
         },
         body: JSON.stringify({
           text:       data.text,
           model_id:   "eleven_turbo_v2_5",
           voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
-          output_format: "pcm_22050",
+          output_format: "pcm_22050",   // raw 16-bit PCM @ 22050 Hz
         }),
       })
         .then(async (res) => {
           if (!res.ok || !res.body) {
             const err = await res.text().catch(() => res.statusText);
             console.error("[TTS] ElevenLabs error:", res.status, err);
-            // If blocked (401) fall back to browser voice
             browserSpeakFallback(data.text, set);
             return;
           }
 
           const reader = res.body.getReader();
           let buffer    = new Uint8Array(0);
-          const CHUNK   = 4410 * 2;  // ~0.2s of PCM @ 22050Hz (2 bytes/sample)
+          // ~0.2s of PCM @ 22050Hz, 16-bit mono = 22050 * 0.2 * 2 = 8820 bytes
+          const CHUNK   = 8820;
 
           const readNext = async () => {
             const { done, value } = await reader.read();
 
             if (value) {
-              // Accumulate bytes
               const merged = new Uint8Array(buffer.length + value.length);
               merged.set(buffer);
               merged.set(value, buffer.length);
@@ -437,18 +448,16 @@ export const useAIDoctorStore = create<AIDoctorState>((set, get) => ({
             // Drain buffer in fixed-size chunks for gapless playback
             while (buffer.length >= CHUNK) {
               const slice = buffer.slice(0, CHUNK);
-              buffer = buffer.slice(CHUNK);
-              const b64 = btoa(String.fromCharCode(...Array.from(slice)));
-              await playPCM16Chunk(b64, set);
+              buffer      = buffer.slice(CHUNK);
+              await playPCM16Chunk(uint8ToB64(slice), set);
             }
 
             if (!done) {
               readNext();
             } else {
-              // Flush remaining bytes
+              // Flush any remaining bytes
               if (buffer.length > 0) {
-                const b64 = btoa(String.fromCharCode(...Array.from(buffer)));
-                await playPCM16Chunk(b64, set);
+                await playPCM16Chunk(uint8ToB64(buffer), set);
               }
               console.log(`[TTS] Turn ${data.turn} audio complete`);
             }
