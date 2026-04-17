@@ -197,17 +197,36 @@ class ModularVoiceSession:
             logger.error("ModularVoice: drain thread crashed: %s", exc)
 
     def _run_loop(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        self._loop = loop
+        # Gunicorn gthread workers may already have a running loop in this thread.
+        # Detect that and handle both cases cleanly.
         try:
-            loop.run_until_complete(self._main_loop())
-        except Exception as exc:
-            logger.error("ModularVoice: loop error for session %s: %s", self.session_id, exc)
-            self._safe_emit("voice_error", {"detail": f"Voice session error: {exc}", "session_id": self.session_id})
-        finally:
-            loop.close()
-            asyncio.set_event_loop(None)
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+
+        if running_loop is not None:
+            # A loop is already running (gunicorn gthread context).
+            # Schedule our coroutine on it and block until done.
+            future = asyncio.run_coroutine_threadsafe(self._main_loop(), running_loop)
+            self._loop = running_loop
+            try:
+                future.result()   # blocks this daemon thread until session ends
+            except Exception as exc:
+                logger.error("ModularVoice: loop error for session %s: %s", self.session_id, exc)
+                self._safe_emit("voice_error", {"detail": f"Voice session error: {exc}", "session_id": self.session_id})
+        else:
+            # No loop running — create a dedicated one (local dev / werkzeug).
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            self._loop = loop
+            try:
+                loop.run_until_complete(self._main_loop())
+            except Exception as exc:
+                logger.error("ModularVoice: loop error for session %s: %s", self.session_id, exc)
+                self._safe_emit("voice_error", {"detail": f"Voice session error: {exc}", "session_id": self.session_id})
+            finally:
+                loop.close()
+                asyncio.set_event_loop(None)
 
     async def _main_loop(self):
         """Main async loop: wait for END_TURN commands, then run pipeline."""
