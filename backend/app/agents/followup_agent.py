@@ -86,7 +86,23 @@ def _llm(model: str = "gemini-2.0-flash", temperature: float = 0.2) -> ChatGoogl
     )
 
 
-def _safe_json(text: str) -> dict:
+def _safe_json(text: Any) -> dict:
+    if isinstance(text, dict):
+        return text
+        
+    if isinstance(text, list):
+        # Handle LangChain message content lists (e.g., from Gemini models)
+        extracted = []
+        for item in text:
+            if isinstance(item, str):
+                extracted.append(item)
+            elif isinstance(item, dict) and "text" in item:
+                extracted.append(item["text"])
+            else:
+                extracted.append(str(item))
+        text = " ".join(extracted)
+        
+    text = str(text)
     try:
         return json.loads(text)
     except Exception:
